@@ -9,17 +9,17 @@ const Wheel = ({ cx }: { cx: number }) => (
   </g>
 );
 
-export default function Truck() {
+export default function Truck({ next = "/home" }: { next?: string }) {
   const router = useRouter();
   const reduce = useReducedMotion();
 
   useEffect(() => {
-    const t = setTimeout(() => router.replace("/home"), reduce ? 700 : 2800);
+    const t = setTimeout(() => router.replace(next), reduce ? 700 : 2800);
     return () => clearTimeout(t);
-  }, [router, reduce]);
+  }, [router, reduce, next]);
 
   return (
-    <main className="relative grid min-h-dvh place-items-center overflow-hidden bg-gradient-to-b from-milk to-cream" onClick={() => router.replace("/home")}>
+    <main className="relative grid min-h-dvh place-items-center overflow-hidden bg-gradient-to-b from-milk to-cream" onClick={() => router.replace(next)}>
       <div className="absolute left-1/2 top-[22%] -translate-x-1/2 text-center">
         <h1 className="text-3xl font-bold sm:text-4xl">Brewing your experience…</h1>
         <p className="mt-1 text-sm opacity-70">Tap anywhere to skip</p>

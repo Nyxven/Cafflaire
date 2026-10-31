@@ -5,25 +5,45 @@
 @layer base {
   :root {
     --cream: 255 248 240; --espresso: 59 36 23; --caramel: 198 134 66; --matcha: 122 158 90;
-    --milk: 243 229 208; --berry: 181 68 110; --surface: 255 255 255; color-scheme: light;
+    --milk: 245 232 212; --berry: 181 68 110; --surface: 255 252 247; color-scheme: light;
   }
   .dark {
     --cream: 24 16 12; --espresso: 245 235 220; --caramel: 214 150 80; --matcha: 140 175 108;
     --milk: 52 38 30; --berry: 224 105 145; --surface: 40 29 23; color-scheme: dark;
   }
   html { @apply bg-cream text-espresso antialiased; scroll-behavior: smooth; }
-  h1, h2, h3 { @apply font-display; }
+  h1, h2, h3 { @apply font-display tracking-tight; }
   :focus-visible { @apply outline-2 outline-offset-2 outline-caramel; }
+  ::selection { background: rgb(var(--caramel) / .35); }
+
+  /* A warm glow in two corners plus a whisper of paper grain, behind everything. */
+  body::before, body::after { content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none; }
+  body::before {
+    background-image:
+      radial-gradient(56rem 38rem at 105% -8%, rgb(var(--caramel) / .16), transparent 62%),
+      radial-gradient(46rem 34rem at -12% 108%, rgb(var(--matcha) / .11), transparent 62%);
+  }
+  body::after {
+    opacity: .07;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .23 0 0 0 0 .14 0 0 0 0 .09 0 0 0 .6 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  .dark body::after { opacity: .05; filter: invert(1); }
 }
+
 @layer components {
-  .btn { @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-full px-5 font-semibold transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-50; }
-  .btn-primary { @apply btn bg-espresso text-cream hover:bg-espresso/90; }
-  .btn-accent { @apply btn bg-caramel text-white hover:bg-caramel/90; }
-  .btn-ghost { @apply btn border border-espresso/20 bg-surface/60 hover:bg-surface; }
-  .card { @apply rounded-2xl bg-surface p-5 shadow-soft; }
-  .input { @apply min-h-11 w-full rounded-xl border border-espresso/20 bg-surface px-4 outline-none focus:border-caramel focus:ring-2 focus:ring-caramel/30; }
+  .btn { @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-full px-5 font-semibold transition duration-200 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50; }
+  .btn-primary { @apply btn bg-espresso text-cream shadow-[0_8px_18px_-8px_rgb(var(--espresso)/.6)] hover:-translate-y-px hover:bg-espresso/90; }
+  .btn-accent { @apply btn bg-caramel text-white shadow-[0_8px_18px_-8px_rgb(var(--caramel)/.9)] hover:-translate-y-px hover:brightness-105; }
+  .btn-ghost { @apply btn border border-espresso/15 bg-surface/70 hover:border-espresso/30 hover:bg-surface; }
+  .card { @apply rounded-3xl border border-espresso/[0.07] bg-surface p-5 shadow-soft; }
+  .input { @apply min-h-11 w-full rounded-xl border border-espresso/20 bg-surface px-4 outline-none transition focus:border-caramel focus:ring-2 focus:ring-caramel/30; }
   .chip { @apply inline-flex items-center rounded-full bg-milk px-3 py-1 text-xs font-semibold; }
+  /* A selectable answer (onboarding, settings): outlined until chosen. */
+  .option { @apply relative flex w-full items-center gap-3 rounded-2xl border-2 border-espresso/10 bg-surface p-4 text-left transition duration-200 hover:border-caramel/50 active:scale-[.98]; }
+  .option[aria-checked="true"] { @apply border-caramel bg-caramel/10; }
 }
+
 @media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
   *, ::before, ::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }

@@ -18,7 +18,10 @@ const config: Config = {
         sans: ['"Inter Variable"', "ui-sans-serif", "system-ui", "sans-serif"],
         display: ['"Fraunces Variable"', "ui-serif", "Georgia", "serif"],
       },
-      boxShadow: { soft: "0 8px 30px rgba(59,36,23,.10)" },
+      boxShadow: {
+        soft: "0 1px 0 rgb(255 255 255 / .55) inset, 0 14px 32px -16px rgb(59 36 23 / .28)",
+        float: "0 18px 40px -14px rgb(59 36 23 / .35)",
+      },
     },
   },
   plugins: [],

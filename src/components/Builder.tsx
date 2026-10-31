@@ -107,7 +107,7 @@ export default function Builder({ preset }: { preset?: string }) {
       </ol>
 
       <div className="flex flex-col gap-6 lg:grid lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)]">
-        <aside className="sticky top-16 z-20 bg-cream pb-2 lg:top-20 lg:self-start lg:pb-0">
+        <aside className="sticky top-[4.75rem] z-20 bg-cream pb-2 lg:top-[5.5rem] lg:self-start lg:pb-0">
           <div ref={cupRef} className={`card grid place-items-center bg-gradient-to-b from-milk to-surface !p-3 transition lg:!p-5 ${dragging ? "ring-4 ring-caramel ring-offset-2 ring-offset-cream" : ""}`}>
             <Cup config={c} className="h-36 lg:h-72" />
             <p className="hidden font-display text-lg font-bold lg:block">{finalName}</p>

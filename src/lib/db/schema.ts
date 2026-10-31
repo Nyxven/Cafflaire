@@ -1,6 +1,7 @@
 import { bigint, boolean, customType, integer, jsonb, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import type { OrderItem } from "../catalog";
 import { decrypt, encryptDet, encryptRandom } from "../crypto";
+import type { Prefs } from "../prefs";
 
 // Transparent encrypted columns: app code sees plain values, the database only ever stores ciphertext.
 /** Randomized AES-GCM text (not searchable). */
@@ -97,4 +98,13 @@ export const orders = pgTable("orders", {
   totalCents: integer("total_cents").notNull(),
   paymentMethod: text("payment_method").notNull().default("cash"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+/** Taste preferences from onboarding. `data` is encrypted at rest; it is null when the person skipped. */
+export const userPrefs = pgTable("user_prefs", {
+  userId: text("user_id").primaryKey().references(() => user.id, { onDelete: "cascade" }),
+  status: text("status").$type<"completed" | "skipped">().notNull(),
+  data: encJson<Prefs>()("data"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

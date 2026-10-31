@@ -1,5 +1,8 @@
 # ☕ Cafflaire — Coffee Ordering Webapp (MVP Build Spec)
 
+> **Update (supersedes parts of this spec; current as of 2026-11-01):** Google sign-in was removed. Auth is email + password with REQUIRED email-OTP verification (6-digit code, hashed, 10-min expiry, 5 attempts), forgot-password via OTP, encrypted PII at rest (AES-256-GCM), DB-backed rate limits, and Profile account management (change password, sign out everywhere, delete account). Catalog/presets live in code (`src/lib/catalog.ts`), the cart is client-side (localStorage), order items are a JSONB snapshot on `orders`, and there is no seed script or ingredient tables. Email is sent via SMTP (Brevo) and `EMAIL_FROM` is required. The repo is public. Dark mode is in the MVP, but light is the default and the switch lives in Settings (Profile → Settings). After first login a short taste quiz (onboarding) personalises the home page. Brand is **Cafflaire**. See CONTEXT.md for the current state and docs/ENV_REFERENCE.md for variables.
+
+
 > Working name: **Cafflaire** (placeholder, change anytime via `NEXT_PUBLIC_APP_NAME`).
 > Goal: customers **build their own coffee** step by step (barista-game style), add it to a basket, repeat, then check out for **pickup or delivery**.
 
