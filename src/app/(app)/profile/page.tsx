@@ -1,3 +1,4 @@
+import AccountPanel from "@/components/AccountPanel";
 import { SignOutButton } from "@/components/Misc";
 import { getSession } from "@/lib/session";
 
@@ -11,8 +12,10 @@ export default async function Profile() {
         <div className="grid h-16 w-16 place-items-center rounded-full bg-caramel text-2xl font-bold text-white">{s.user.name[0]?.toUpperCase()}</div>
         <div><div className="text-xs opacity-60">Name</div><div className="font-semibold">{s.user.name}</div></div>
         <div><div className="text-xs opacity-60">Email</div><div className="font-semibold">{s.user.email}</div></div>
+        <div><div className="text-xs opacity-60">Email status</div><div className="font-semibold">{s.user.emailVerified ? "Verified ✓" : "Not verified"}</div></div>
         <SignOutButton />
       </div>
+      <AccountPanel />
     </div>
   );
 }

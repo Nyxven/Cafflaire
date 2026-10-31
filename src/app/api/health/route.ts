@@ -1,6 +1,8 @@
 import { sql } from "drizzle-orm";
 import { NextResponse } from "next/server";
+import { keySource } from "@/lib/crypto";
 import { db } from "@/lib/db";
+import { mailConfigured } from "@/lib/mail";
 
 export const dynamic = "force-dynamic";
 
@@ -11,7 +13,8 @@ export async function GET() {
     databaseUrlSet: !!(process.env.DATABASE_URL ?? process.env.POSTGRES_URL),
     databaseReachable: false,
     tablesExist: false,
-    googleConfigured: !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET),
+    encryptionKey: keySource(), // "dedicated" is best; "derived" works but set DATA_ENCRYPTION_KEY
+    emailConfigured: mailConfigured(), // needed to send OTP codes in production
   };
   try {
     await db.execute(sql`select 1`);
@@ -20,6 +23,6 @@ export async function GET() {
     await db.execute(sql`select 1 from "orders" limit 1`);
     checks.tablesExist = true;
   } catch { /* leave flags false */ }
-  const ok = checks.secretSet && checks.databaseReachable && checks.tablesExist;
+  const ok = checks.secretSet && checks.databaseReachable && checks.tablesExist && checks.emailConfigured && checks.encryptionKey !== "missing";
   return NextResponse.json({ ok, ...checks }, { status: ok ? 200 : 503 });
 }

@@ -1,11 +1,33 @@
-import { boolean, integer, jsonb, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { bigint, boolean, customType, integer, jsonb, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import type { OrderItem } from "../catalog";
+import { decrypt, encryptDet, encryptRandom } from "../crypto";
+
+// Transparent encrypted columns: app code sees plain values, the database only ever stores ciphertext.
+/** Randomized AES-GCM text (not searchable). */
+export const encText = customType<{ data: string; driverData: string }>({
+  dataType: () => "text",
+  toDriver: (v) => encryptRandom(v),
+  fromDriver: (v) => decrypt(v),
+});
+/** Deterministic AES-GCM text (same input -> same ciphertext, so lookups and UNIQUE still work). */
+export const detText = customType<{ data: string; driverData: string }>({
+  dataType: () => "text",
+  toDriver: (v) => encryptDet(v),
+  fromDriver: (v) => decrypt(v),
+});
+/** Randomized AES-GCM JSON. */
+export const encJson = <T>() =>
+  customType<{ data: T; driverData: string }>({
+    dataType: () => "text",
+    toDriver: (v) => encryptRandom(JSON.stringify(v)),
+    fromDriver: (v) => JSON.parse(decrypt(v)) as T,
+  });
 
 // ---- Better Auth tables (shape matches Better Auth's drizzle adapter) ----
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
-  name: text("name").notNull(),
-  email: text("email").notNull().unique(),
+  name: encText("name").notNull(),
+  email: detText("email").notNull().unique(),
   emailVerified: boolean("email_verified").notNull().default(false),
   image: text("image"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -15,11 +37,11 @@ export const user = pgTable("user", {
 export const session = pgTable("session", {
   id: text("id").primaryKey(),
   expiresAt: timestamp("expires_at").notNull(),
-  token: text("token").notNull().unique(),
+  token: detText("token").notNull().unique(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
-  ipAddress: text("ip_address"),
-  userAgent: text("user_agent"),
+  ipAddress: encText("ip_address"),
+  userAgent: encText("user_agent"),
   userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
 });
 
@@ -41,11 +63,18 @@ export const account = pgTable("account", {
 
 export const verification = pgTable("verification", {
   id: text("id").primaryKey(),
-  identifier: text("identifier").notNull(),
+  identifier: detText("identifier").notNull(),
   value: text("value").notNull(),
   expiresAt: timestamp("expires_at").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const rateLimit = pgTable("rate_limit", {
+  id: text("id").primaryKey(),
+  key: text("key"),
+  count: integer("count"),
+  lastRequest: bigint("last_request", { mode: "number" }),
 });
 
 // ---- App tables ----
@@ -59,9 +88,9 @@ export const orders = pgTable("orders", {
   status: text("status").$type<OrderStatus>().notNull().default("pending"),
   fulfilment: text("fulfilment").$type<"pickup" | "delivery">().notNull(),
   pickupTime: timestamp("pickup_time"),
-  address: jsonb("address").$type<{ line1: string; city: string; notes?: string } | null>(),
-  phone: text("phone").notNull(),
-  notes: text("notes"),
+  address: encJson<{ line1: string; city: string; notes?: string }>()("address"),
+  phone: encText("phone").notNull(),
+  notes: encText("notes"),
   items: jsonb("items").$type<OrderItem[]>().notNull(),
   subtotalCents: integer("subtotal_cents").notNull(),
   deliveryFeeCents: integer("delivery_fee_cents").notNull().default(0),
