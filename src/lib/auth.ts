@@ -1,6 +1,7 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
+import { after } from "next/server";
 import { emailOTP } from "better-auth/plugins";
 import { db as defaultDb, schema } from "./db";
 import { OtpType, sendOtpEmail } from "./mail";
@@ -17,6 +18,13 @@ export function createAuth({ db = defaultDb as unknown as Db, sendOtp = sendOtpE
     database: drizzleAdapter(db, { provider: "pg", schema }),
     // Passwords are stored as salted scrypt hashes by Better Auth (never reversible).
     emailAndPassword: { enabled: true, minPasswordLength: 10, maxPasswordLength: 128, requireEmailVerification: true },
+    // On Vercel the function can be frozen right after the response, killing an email still being sent.
+    // after() keeps it alive until the email is out. Outside a request (tests) it just runs normally.
+    advanced: {
+      backgroundTasks: {
+        handler: (task: Promise<unknown>) => { try { after(task); } catch { void task.catch(() => {}); } },
+      },
+    },
     user: { deleteUser: { enabled: true } },
     session: { expiresIn: 60 * 60 * 24 * 7, updateAge: 60 * 60 * 24 },
     rateLimit: {

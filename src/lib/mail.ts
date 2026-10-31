@@ -1,19 +1,44 @@
 import nodemailer from "nodemailer";
 
-export const mailConfigured = () => !!(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS);
+// EMAIL_FROM is required: the SMTP login (e.g. xxx@smtp-brevo.com) is NOT a valid sender address.
+export const mailConfigured = () => !!(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS && process.env.EMAIL_FROM);
 const APP = process.env.NEXT_PUBLIC_APP_NAME ?? "Cafflaire";
+
+function makeTransport() {
+  const port = Number(process.env.SMTP_PORT ?? 587);
+  return nodemailer.createTransport({
+    host: process.env.SMTP_HOST, port, secure: port === 465,
+    auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+    connectionTimeout: 10_000, greetingTimeout: 10_000, socketTimeout: 15_000, // fail fast instead of hanging until Vercel kills the function
+  });
+}
+
+/** Safe summary of an SMTP error (no secrets) for logs and /api/health. */
+export function mailErrorInfo(e: unknown) {
+  const err = e as { code?: string; responseCode?: number; response?: string };
+  return { code: err?.code ?? "UNKNOWN", responseCode: err?.responseCode, response: err?.response?.slice(0, 160) };
+}
+
+/** Checks the SMTP login works, without sending anything. */
+export async function verifyMail(): Promise<{ ok: true } | { ok: false; code: string; responseCode?: number; response?: string }> {
+  if (!mailConfigured()) return { ok: false, code: "NOT_CONFIGURED" };
+  try { await makeTransport().verify(); return { ok: true }; }
+  catch (e) { return { ok: false, ...mailErrorInfo(e) }; }
+}
 
 export async function sendMail(to: string, subject: string, text: string, html: string) {
   if (!mailConfigured()) {
     if (process.env.NODE_ENV !== "production") { console.log(`[mail:dev] to=${to}\n${subject}\n${text}`); return; }
     throw new Error("Email is not configured: set SMTP_HOST, SMTP_USER, SMTP_PASS and EMAIL_FROM.");
   }
-  const port = Number(process.env.SMTP_PORT ?? 587);
-  const transport = nodemailer.createTransport({
-    host: process.env.SMTP_HOST, port, secure: port === 465,
-    auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
-  });
-  await transport.sendMail({ from: process.env.EMAIL_FROM ?? process.env.SMTP_USER, to, subject, text, html });
+  try {
+    const info = await makeTransport().sendMail({ from: process.env.EMAIL_FROM, to, subject, text, html });
+    if (info.rejected?.length) throw Object.assign(new Error("Recipient rejected"), { code: "EREJECTED" });
+  } catch (e) {
+    // Visible in Vercel -> Logs. Never includes the code, password or recipient.
+    console.error("[mail] send failed", mailErrorInfo(e));
+    throw e;
+  }
 }
 
 export type OtpType = "sign-in" | "email-verification" | "forget-password" | "change-email";
