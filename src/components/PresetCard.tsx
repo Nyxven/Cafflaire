@@ -4,6 +4,7 @@ import { useState } from "react";
 import Cup from "./Cup";
 import { StatChips } from "./Stats";
 import { Preset, calcStats, fmt, unitPrice } from "@/lib/catalog";
+import { play } from "@/lib/sound";
 import { useCart } from "@/lib/store";
 
 export default function PresetCard({ p }: { p: Preset }) {
@@ -20,7 +21,7 @@ export default function PresetCard({ p }: { p: Preset }) {
       <StatChips s={calcStats(p.config)} />
       <div className="mt-4 grid grid-cols-2 gap-2">
         <Link href={`/build?preset=${p.slug}`} className="btn-ghost text-sm">Customize</Link>
-        <button className="btn-accent text-sm" onClick={() => { add(p.name, structuredClone(p.config)); setDone(true); setTimeout(() => setDone(false), 1400); }}>{done ? "Added ✓" : "Add"}</button>
+        <button className="btn-accent text-sm" onClick={() => { add(p.name, structuredClone(p.config)); play("chime"); setDone(true); setTimeout(() => setDone(false), 1400); }}>{done ? "Added ✓" : "Add"}</button>
       </div>
     </article>
   );

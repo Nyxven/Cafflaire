@@ -2,13 +2,14 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
-import { DELIVERY_FEE_CENTS, fmt, unitPrice } from "@/lib/catalog";
+import { DELIVERY_FEE_CENTS, MIN_PREP_MINUTES, STORE, fmt, unitPrice } from "@/lib/catalog";
 import { useHydrated } from "@/lib/hydrated";
+import { play } from "@/lib/sound";
 import { useCart } from "@/lib/store";
 
 function slots() {
   const out: { v: string; l: string }[] = [];
-  const t = new Date(Date.now() + 20 * 60000);
+  const t = new Date(Date.now() + MIN_PREP_MINUTES * 60000);
   t.setMinutes(Math.ceil(t.getMinutes() / 15) * 15, 0, 0);
   for (let i = 0; i < 8; i++) {
     out.push({ v: t.toISOString(), l: t.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) });
@@ -54,6 +55,7 @@ export default function CheckoutForm() {
     const data = await res.json().catch(() => ({}));
     setBusy(false);
     if (!res.ok) return setError(data.error ?? "Could not place your order.");
+    play("chime");
     clear();
     router.push(`/orders/${data.id}?placed=1`);
   }
@@ -66,7 +68,7 @@ export default function CheckoutForm() {
           <div className="grid grid-cols-2 gap-3" role="radiogroup">
             {(["pickup", "delivery"] as const).map((m) => (
               <button type="button" key={m} role="radio" aria-checked={mode === m} onClick={() => setMode(m)} className={`rounded-2xl border-2 p-4 text-left ${mode === m ? "border-caramel bg-caramel/10" : "border-espresso/10"}`}>
-                <div className="text-2xl">{m === "pickup" ? "🏪" : "🛵"}</div><div className="font-bold capitalize">{m}</div><div className="text-sm opacity-70">{m === "pickup" ? "Free · ready in ~15 min" : `Fee ${fmt(DELIVERY_FEE_CENTS)}`}</div>
+                <div className="text-2xl">{m === "pickup" ? "🏪" : "🛵"}</div><div className="font-bold capitalize">{m}</div><div className="text-sm opacity-70">{m === "pickup" ? `Free · ready in ~${MIN_PREP_MINUTES} min` : `Fee ${fmt(DELIVERY_FEE_CENTS)}`}</div>
               </button>
             ))}
           </div>
@@ -75,7 +77,7 @@ export default function CheckoutForm() {
           <label className="block text-sm font-semibold">Mobile number<input className="input mt-1" required type="tel" minLength={7} value={phone} onChange={(e) => setPhone(e.target.value)} autoComplete="tel" /></label>
           {mode === "pickup" ? (
             <label className="block text-sm font-semibold">Pickup time
-              <select className="input mt-1" value={pickup} onChange={(e) => setPickup(e.target.value)}><option value="">ASAP (~15 min)</option>{times.map((t) => <option key={t.v} value={t.v}>{t.l}</option>)}</select>
+              <select className="input mt-1" value={pickup} onChange={(e) => setPickup(e.target.value)}><option value="">ASAP (~{MIN_PREP_MINUTES} min)</option>{times.map((t) => <option key={t.v} value={t.v}>{t.l}</option>)}</select>
             </label>
           ) : (
             <>
@@ -84,6 +86,9 @@ export default function CheckoutForm() {
             </>
           )}
           <label className="block text-sm font-semibold">Notes (optional)<textarea className="input mt-1 min-h-20" maxLength={300} value={notes} onChange={(e) => setNotes(e.target.value)} /></label>
+          {mode === "pickup" && STORE.pickupAddress && <p className="text-sm">📍 Pick up at: <strong>{STORE.pickupAddress}</strong></p>}
+          {mode === "delivery" && STORE.deliveryArea && <p className="text-sm">🛵 We deliver to: {STORE.deliveryArea}</p>}
+          {STORE.hours && <p className="text-sm opacity-70">🕒 Store hours: {STORE.hours}</p>}
           <p className="text-sm opacity-70">💵 Payment: cash on {mode === "pickup" ? "pickup" : "delivery"}.</p>
         </div>
       </div>

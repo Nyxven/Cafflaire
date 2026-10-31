@@ -27,7 +27,7 @@ export const useCart = create<CartState>()(
       remove: (id) => set((s) => ({ items: s.items.filter((i) => i.id !== id) })),
       clear: () => set({ items: [] }),
     }),
-    { name: "byo-cart", storage: createJSONStorage(() => localStorage) },
+    { name: "cafflaire-cart", storage: createJSONStorage(() => localStorage) },
   ),
 );
 
@@ -68,3 +68,8 @@ export const useBuilder = create<BuilderState>((set) => ({
 }));
 
 export { defaultName };
+
+interface SoundState { muted: boolean; toggle: () => void }
+export const useSound = create<SoundState>()(
+  persist((set) => ({ muted: false, toggle: () => set((s) => ({ muted: !s.muted })) }), { name: "cafflaire-sound", storage: createJSONStorage(() => localStorage) }),
+);

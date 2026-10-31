@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { orders } from "@/lib/db/schema";
-import { DELIVERY_FEE_CENTS, OrderItem, calcStats, unitPrice, validateConfig } from "@/lib/catalog";
+import { DELIVERY_FEE_CENTS, MIN_PREP_MINUTES, OrderItem, calcStats, unitPrice, validateConfig } from "@/lib/catalog";
 import { getSession } from "@/lib/session";
 
 const config = z.object({
@@ -35,6 +35,9 @@ export async function POST(req: Request) {
   if (!parsed.success) return NextResponse.json({ error: "Please check your order details." }, { status: 400 });
   const b = parsed.data;
   if (b.fulfilment === "delivery" && !b.address) return NextResponse.json({ error: "Delivery address is required." }, { status: 400 });
+
+  if (b.fulfilment === "pickup" && b.pickupTime && new Date(b.pickupTime).getTime() < Date.now() + (MIN_PREP_MINUTES - 1) * 60000)
+    return NextResponse.json({ error: `Pickup must be at least ${MIN_PREP_MINUTES} minutes from now. Please choose a later time.` }, { status: 400 });
 
   // Never trust client prices: re-validate and re-price every drink on the server.
   const items: OrderItem[] = [];

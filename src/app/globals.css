@@ -3,6 +3,14 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --cream: 255 248 240; --espresso: 59 36 23; --caramel: 198 134 66; --matcha: 122 158 90;
+    --milk: 243 229 208; --berry: 181 68 110; --surface: 255 255 255; color-scheme: light;
+  }
+  .dark {
+    --cream: 24 16 12; --espresso: 245 235 220; --caramel: 214 150 80; --matcha: 140 175 108;
+    --milk: 52 38 30; --berry: 224 105 145; --surface: 40 29 23; color-scheme: dark;
+  }
   html { @apply bg-cream text-espresso antialiased; scroll-behavior: smooth; }
   h1, h2, h3 { @apply font-display; }
   :focus-visible { @apply outline-2 outline-offset-2 outline-caramel; }
@@ -11,9 +19,9 @@
   .btn { @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-full px-5 font-semibold transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-50; }
   .btn-primary { @apply btn bg-espresso text-cream hover:bg-espresso/90; }
   .btn-accent { @apply btn bg-caramel text-white hover:bg-caramel/90; }
-  .btn-ghost { @apply btn border border-espresso/20 bg-white/60 hover:bg-white; }
-  .card { @apply rounded-2xl bg-white p-5 shadow-soft; }
-  .input { @apply min-h-11 w-full rounded-xl border border-espresso/20 bg-white px-4 outline-none focus:border-caramel focus:ring-2 focus:ring-caramel/30; }
+  .btn-ghost { @apply btn border border-espresso/20 bg-surface/60 hover:bg-surface; }
+  .card { @apply rounded-2xl bg-surface p-5 shadow-soft; }
+  .input { @apply min-h-11 w-full rounded-xl border border-espresso/20 bg-surface px-4 outline-none focus:border-caramel focus:ring-2 focus:ring-caramel/30; }
   .chip { @apply inline-flex items-center rounded-full bg-milk px-3 py-1 text-xs font-semibold; }
 }
 @media (prefers-reduced-motion: reduce) {

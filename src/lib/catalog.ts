@@ -208,3 +208,11 @@ export const PRESETS: Preset[] = [
 export const PRESET_MAP = Object.fromEntries(PRESETS.map((p) => [p.slug, p]));
 
 export const defaultName = (c: Config) => `My ${BASE_MAP[c.base]?.name ?? "Coffee"}`;
+
+export const MIN_PREP_MINUTES = Number(process.env.NEXT_PUBLIC_MIN_PREP_MINUTES ?? 15);
+// Optional store details (still undecided) — set via env, shown at checkout/orders when present.
+export const STORE = {
+  pickupAddress: process.env.NEXT_PUBLIC_PICKUP_ADDRESS ?? "",
+  hours: process.env.NEXT_PUBLIC_STORE_HOURS ?? "",
+  deliveryArea: process.env.NEXT_PUBLIC_DELIVERY_AREA ?? "",
+};

@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-export const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME ?? "Brew Your Own";
+export const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME ?? "Cafflaire";
 
 export default function Logo({ href = "/home" }: { href?: string }) {
   return (

@@ -5,7 +5,7 @@ import { RefreshEvery, ReorderButton } from "@/components/Misc";
 import { StatChips } from "@/components/Stats";
 import { db } from "@/lib/db";
 import { orders } from "@/lib/db/schema";
-import { fmt, SIZES } from "@/lib/catalog";
+import { fmt, SIZES, STORE } from "@/lib/catalog";
 import { getSession } from "@/lib/session";
 
 export const metadata = { title: "Order" };
@@ -50,7 +50,7 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="card text-sm"><h2 className="mb-1 text-lg font-bold capitalize">{o.fulfilment}</h2>
-          {o.fulfilment === "pickup" ? <p>{o.pickupTime ? o.pickupTime.toLocaleTimeString("en-PH", { timeStyle: "short" }) : "ASAP (~15 min)"}</p> : <p>{o.address?.line1}, {o.address?.city}</p>}
+          {o.fulfilment === "pickup" ? <><p>{o.pickupTime ? o.pickupTime.toLocaleTimeString("en-PH", { timeStyle: "short" }) : "ASAP"}</p>{STORE.pickupAddress && <p>📍 {STORE.pickupAddress}</p>}</> : <p>{o.address?.line1}, {o.address?.city}</p>}
           <p>📞 {o.phone}</p>{o.notes && <p>📝 {o.notes}</p>}<p className="mt-1 opacity-70">Cash on {o.fulfilment === "pickup" ? "pickup" : "delivery"}</p></div>
         <div className="card space-y-1 text-sm"><div className="flex justify-between"><span>Subtotal</span><span>{fmt(o.subtotalCents)}</span></div><div className="flex justify-between"><span>Delivery</span><span>{fmt(o.deliveryFeeCents)}</span></div><div className="flex justify-between text-lg font-bold"><span>Total</span><span>{fmt(o.totalCents)}</span></div></div>
       </div>

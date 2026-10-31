@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Cup from "@/components/Cup";
+import ThemeToggle from "@/components/ThemeToggle";
 import Logo, { APP_NAME } from "@/components/Logo";
 import { PRESET_MAP } from "@/lib/catalog";
 
@@ -14,7 +15,7 @@ export default function Landing() {
     <main>
       <header className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
         <Logo href="/" />
-        <div className="flex gap-2"><Link href="/login" className="btn-ghost">Log in</Link><Link href="/signup" className="btn-primary hidden sm:inline-flex">Sign up</Link></div>
+        <div className="flex items-center gap-2"><ThemeToggle /><Link href="/login" className="btn-ghost">Log in</Link><Link href="/signup" className="btn-primary hidden sm:inline-flex">Sign up</Link></div>
       </header>
       <section className="mx-auto grid max-w-6xl items-center gap-8 px-4 py-10 lg:grid-cols-2 lg:py-20">
         <div>
@@ -23,7 +24,7 @@ export default function Landing() {
           <p className="mt-4 max-w-md text-lg opacity-80">{APP_NAME} lets you craft every layer of your drink, then pick it up or have it delivered.</p>
           <div className="mt-6 flex flex-wrap gap-3"><Link href="/signup" className="btn-accent !min-h-12 !px-7">Start brewing</Link><Link href="/login" className="btn-ghost !min-h-12 !px-7">I have an account</Link></div>
         </div>
-        <div className="relative grid place-items-center rounded-[2rem] bg-gradient-to-br from-milk to-white p-8 shadow-soft">
+        <div className="relative grid place-items-center rounded-[2rem] bg-gradient-to-br from-milk to-surface p-8 shadow-soft">
           <Cup config={PRESET_MAP["caramel-frappe"].config} className="h-72 sm:h-96" />
         </div>
       </section>

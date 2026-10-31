@@ -39,9 +39,9 @@ export default function Cup({ config, className = "h-64" }: { config: Config; cl
   return (
     <svg viewBox="0 0 200 270" className={className} role="img" aria-label={`${base.name} preview`}>
       <defs><clipPath id="cupclip"><path d={CUP} /></clipPath></defs>
-      <ellipse cx="100" cy="262" rx="62" ry="6" fill="#3B2417" opacity=".12" />
+      <ellipse cx="100" cy="262" rx="62" ry="6" fill="currentColor" opacity=".12" />
       {iced && <line x1="122" y1="14" x2="106" y2="236" stroke="#e8554e" strokeWidth="6" strokeLinecap="round" />}
-      <path d={CUP} fill="#fff" fillOpacity=".55" />
+      <path d={CUP} fill="currentColor" fillOpacity=".07" />
       <g clipPath="url(#cupclip)">
         {layers.map((l, i) => (
           <motion.rect key={i} x="30" width="140" initial={false} animate={{ y: l.y, height: Math.max(l.h, 0), fill: l.c }} transition={{ type: "spring", stiffness: 120, damping: 18 }} />
@@ -52,8 +52,8 @@ export default function Cup({ config, className = "h-64" }: { config: Config; cl
         ))}
         {blended && [[70, 40], [120, 70], [90, 100], [130, 30]].map(([x, dy], i) => <circle key={i} cx={x} cy={top + dy} r="4" fill="#fff" fillOpacity=".35" />)}
       </g>
-      <path d={CUP} fill="none" stroke="#3B2417" strokeOpacity=".35" strokeWidth="3" strokeLinejoin="round" />
-      <path d="M36 56 H164" stroke="#3B2417" strokeOpacity=".5" strokeWidth="6" strokeLinecap="round" />
+      <path d={CUP} fill="none" stroke="currentColor" strokeOpacity=".45" strokeWidth="3" strokeLinejoin="round" />
+      <path d="M36 56 H164" stroke="currentColor" strokeOpacity=".6" strokeWidth="6" strokeLinecap="round" />
 
       {has("cocoa") && Array.from({ length: 14 }).map((_, i) => <circle key={i} cx={62 + ((i * 37) % 76)} cy={top + 3 + (i % 3) * 2} r="2" fill="#5a3a28" />)}
       {has("cookie") && [[70, 0], [90, -3], [112, 0], [128, -2], [100, -6]].map(([x, dy], i) => <rect key={i} x={x} y={top + dy - 6} width="11" height="8" rx="2" fill="#b07a45" transform={`rotate(${i * 25} ${x} ${top})`} />)}
@@ -66,7 +66,7 @@ export default function Cup({ config, className = "h-64" }: { config: Config; cl
       {has("caramel_drizzle") && <path d={`M62 ${whippedY - 14} q14 -12 26 0 t26 0 t26 0`} stroke="#c68642" strokeWidth="4" fill="none" strokeLinecap="round" />}
       {has("choco_drizzle") && <path d={`M66 ${whippedY - 26} q12 12 24 0 t24 0 t22 0`} stroke="#3b2417" strokeWidth="4" fill="none" strokeLinecap="round" />}
       {!iced && [78, 100, 122].map((x, i) => (
-        <motion.path key={x} d={`M${x} 40 q-8 -10 0 -20 q8 -10 0 -20`} stroke="#3B2417" strokeOpacity=".25" strokeWidth="3" fill="none" strokeLinecap="round" initial={{ opacity: 0 }} animate={{ opacity: [0, 0.6, 0], y: [0, -8, -14] }} transition={{ duration: 2.4, repeat: Infinity, delay: i * 0.5 }} />
+        <motion.path key={x} d={`M${x} 40 q-8 -10 0 -20 q8 -10 0 -20`} stroke="currentColor" strokeOpacity=".3" strokeWidth="3" fill="none" strokeLinecap="round" initial={{ opacity: 0 }} animate={{ opacity: [0, 0.6, 0], y: [0, -8, -14] }} transition={{ duration: 2.4, repeat: Infinity, delay: i * 0.5 }} />
       ))}
     </svg>
   );

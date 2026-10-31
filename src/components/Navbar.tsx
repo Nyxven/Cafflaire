@@ -3,6 +3,8 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Logo from "./Logo";
+import SoundToggle from "./SoundToggle";
+import ThemeToggle from "./ThemeToggle";
 import { authClient } from "@/lib/auth-client";
 import { useHydrated } from "@/lib/hydrated";
 import { useCart } from "@/lib/store";
@@ -55,11 +57,12 @@ export default function Navbar({ user, admin }: { user: { name: string; email: s
           ))}
         </ul>
         <div className="flex items-center gap-1">
+          <div className="hidden items-center lg:flex"><SoundToggle /><ThemeToggle /></div>
           <CartButton />
           <div className="relative hidden lg:block">
             <button onClick={() => setMenu((m) => !m)} aria-haspopup="menu" aria-expanded={menu} aria-label="Profile menu" className="grid h-10 w-10 place-items-center rounded-full bg-caramel font-bold text-white">{initial}</button>
             {menu && (
-              <div role="menu" className="absolute right-0 mt-2 w-52 rounded-2xl bg-white p-2 shadow-soft">
+              <div role="menu" className="absolute right-0 mt-2 w-52 rounded-2xl bg-surface p-2 shadow-soft">
                 <p className="truncate px-3 py-2 text-xs opacity-60">{user.email}</p>
                 <Link role="menuitem" href="/profile" className="block rounded-xl px-3 py-2 hover:bg-milk">Profile</Link>
                 <button role="menuitem" onClick={signOut} className="block w-full rounded-xl px-3 py-2 text-left hover:bg-milk">Sign out</button>
@@ -76,11 +79,12 @@ export default function Navbar({ user, admin }: { user: { name: string; email: s
         <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true" aria-label="Menu">
           <button className="absolute inset-0 bg-espresso/40" aria-label="Close menu" onClick={() => setOpen(false)} />
           <aside className="absolute right-0 top-0 flex h-full w-72 max-w-[85%] flex-col gap-1 bg-cream p-4 shadow-soft">
-            <button className="mb-2 self-end grid h-11 w-11 place-items-center rounded-full hover:bg-milk" aria-label="Close menu" onClick={() => setOpen(false)}>✕</button>
+            <button className="mb-2 grid self-end h-11 w-11 place-items-center rounded-full hover:bg-milk" aria-label="Close menu" onClick={() => setOpen(false)}>✕</button>
             {[...links, { href: "/profile", label: "Profile" }].map((l) => (
               <Link key={l.href} href={l.href} aria-current={active(l.href) ? "page" : undefined} className={`rounded-xl px-4 py-3 text-lg font-semibold ${active(l.href) ? "bg-espresso text-cream" : "hover:bg-milk"}`}>{l.label}</Link>
             ))}
-            <button onClick={signOut} className="btn-ghost mt-auto">Sign out</button>
+            <div className="mt-auto flex items-center justify-between rounded-xl bg-milk/60 px-2"><span className="px-2 text-sm font-semibold">Sound &amp; theme</span><div className="flex"><SoundToggle /><ThemeToggle /></div></div>
+            <button onClick={signOut} className="btn-ghost">Sign out</button>
           </aside>
         </div>
       )}

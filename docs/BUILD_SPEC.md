@@ -1,7 +1,29 @@
-# ☕ Brew Your Own — Coffee Ordering Webapp (MVP Build Spec)
+# ☕ Cafflaire — Coffee Ordering Webapp (MVP Build Spec)
 
-> Working name: **Brew Your Own** (placeholder, change anytime via `NEXT_PUBLIC_APP_NAME`).
+> Working name: **Cafflaire** (placeholder, change anytime via `NEXT_PUBLIC_APP_NAME`).
 > Goal: customers **build their own coffee** step by step (barista-game style), add it to a basket, repeat, then check out for **pickup or delivery**.
+
+---
+
+## 0.0 Locked Decisions (discovery completed)
+
+| Topic | Decision |
+|---|---|
+| Brand | **Cafflaire** |
+| Look | Cozy and warm, espresso / cream / caramel palette |
+| Currency | PHP ₱, stored as integer centavos |
+| Payment (MVP) | Cash on pickup or delivery |
+| Fulfilment | ₱50 flat delivery fee, 15 min minimum prep. **Open:** delivery area, pickup address, store hours |
+| Builder | Tap-to-add **and** drag-and-drop (tap + keyboard fallback), live stats panel |
+| Sound | On, with a mute toggle |
+| Menu | Seed menu from §7 |
+| Mobile nav | Top bar (logo, cart, hamburger) |
+| Admin | Minimal order-status page included |
+| Dark mode | Included, with light/dark switch (moved into the MVP) |
+| Hosting | Vercel subdomain |
+| Repo | `cafflaire`, private |
+
+The "Ask First" protocol below still applies to anything **not** listed here.
 
 ---
 
@@ -17,7 +39,7 @@
 5. Record every answer in `CONTEXT.md` → *Key Decisions*.
 
 ### Batch A — Brand & Look
-- Brand name? (default: "Brew Your Own")
+- Brand name? (default: "Cafflaire")
 - Overall vibe? (Cozy & warm · Modern & minimal · Playful & colorful · You decide)
 - Color direction? (Espresso/cream/caramel [default] · Matcha green · Pastel · Custom hex colors)
 
@@ -36,7 +58,7 @@
 - Mobile navigation? (Top bar + hamburger [as requested] · Bottom tab bar · Both)
 - Include a minimal admin page to update order status in the MVP? (Yes [default] · No)
 - Dark mode in MVP? (No [default] · Yes)
-- GitHub repo name & visibility? (`brew-your-own`, private [default] · Other)
+- GitHub repo name & visibility? (`cafflaire`, private [default] · Other)
 - Custom domain or Vercel subdomain? (Vercel subdomain [default] · Custom)
 
 ### Per-Phase Check (start of each phase)
@@ -321,7 +343,7 @@ BETTER_AUTH_URL=http://localhost:3000
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
-NEXT_PUBLIC_APP_NAME=Brew Your Own
+NEXT_PUBLIC_APP_NAME=Cafflaire
 NEXT_PUBLIC_CURRENCY=PHP
 DELIVERY_FEE_CENTS=5000
 MIN_PREP_MINUTES=15
@@ -332,7 +354,7 @@ Never commit real secrets. Set separate values for Preview and Production on Ver
 
 ## 11. Setup Guide (GitHub → Vercel → Neon)
 
-1. **Create the repo on GitHub** (`brew-your-own`, private or public), add `.gitignore` (Node), MIT license optional.
+1. **Create the repo on GitHub** (`cafflaire`, private or public), add `.gitignore` (Node), MIT license optional.
 2. **Scaffold:** `npx create-next-app@latest` (TypeScript, Tailwind, App Router, ESLint, `src/` dir) → push to `main`.
 3. **Branching:** `main` is protected (PR + passing CI). Work on `feat/*` branches; **Conventional Commits** (`feat:`, `fix:`, `chore:`).
 4. **Vercel:** Import the GitHub repo → every PR gets a Preview URL; `main` deploys to Production.
