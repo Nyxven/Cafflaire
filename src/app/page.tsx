@@ -1,4 +1,5 @@
 import Link from "next/link";
+import DrinkMarquee from "@/components/DrinkMarquee";
 import HeroCup from "@/components/HeroCup";
 import Logo, { APP_NAME } from "@/components/Logo";
 import Ring from "@/components/Ring";
@@ -33,6 +34,11 @@ export default function Landing() {
           </ul>
         </div>
         <HeroCup />
+      </section>
+
+      <section aria-label="Popular drinks" className="pb-16">
+        <p className="mb-5 text-center text-sm font-semibold uppercase tracking-widest opacity-60">Fan favourites, or build your own</p>
+        <DrinkMarquee />
       </section>
 
       <section className="mx-auto max-w-6xl px-4 pb-20">

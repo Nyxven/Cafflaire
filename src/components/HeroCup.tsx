@@ -18,9 +18,12 @@ export default function HeroCup() {
   }, [reduce]);
   const p = PRESET_MAP[SLUGS[i]];
   return (
-    <div className="relative mx-auto grid w-full max-w-md place-items-center">
-      <Ring draw className="absolute inset-0 m-auto h-[110%] w-[110%] text-caramel" />
-      <Cup config={p.config} className="relative h-80 drop-shadow-xl sm:h-[26rem]" />
+    <div className="relative mx-auto w-full max-w-[30rem]">
+      {/* A square stage: the ring fills it and the cup sits in the exact middle. */}
+      <div className="relative aspect-square w-full">
+        <Ring draw className="absolute inset-0 h-full w-full text-caramel" />
+        <Cup config={p.config} className="absolute inset-[11%] h-[78%] w-[78%] drop-shadow-xl" />
+      </div>
       <div className="relative -mt-2 h-16 w-full text-center" aria-live="polite">
         <AnimatePresence mode="wait">
           <motion.div key={p.slug} initial={reduce ? false : { opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={reduce ? undefined : { opacity: 0, y: -8 }} transition={{ duration: 0.25 }}>
