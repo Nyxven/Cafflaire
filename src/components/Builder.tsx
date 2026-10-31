@@ -13,7 +13,7 @@ import {
   calcStats, defaultName, fmt, priceLines, unitPrice, validateConfig,
 } from "@/lib/catalog";
 import * as fx from "@/lib/fx";
-import { play } from "@/lib/sound";
+import { play, type Sfx } from "@/lib/sound";
 import { useBuilder, useCart } from "@/lib/store";
 
 const STEPS = ["Base", "Size & temp", "Shots", "Milk", "Sweeteners", "Toppings", "Review"];
@@ -21,6 +21,15 @@ const STEPS = ["Base", "Size & temp", "Shots", "Milk", "Sweeteners", "Toppings",
 const SYRUP_COLOR: Record<string, string> = { sugar: "#f5f0e6", brown: "#8a5a34", honey: "#e0a526", vanilla: "#f1dfa4", caramel: "#c68642", hazelnut: "#8b5a3c", mocha: "#4a2a1a" };
 const TOP_COLOR: Record<string, string> = { whipped: "#fffdf8", caramel_drizzle: "#c68642", choco_drizzle: "#3b2417", cocoa: "#5a3a28", cookie: "#b07a45", marshmallow: "#ffffff" };
 const cur = () => useBuilder.getState().config;
+const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+
+// Toppings that come out of a dispenser instead of flying in: which tool, how long it runs, when the cup receives it.
+const DISPENSE: Record<string, { tool: fx.Tool; ms: number; at: number; sfx: Sfx }> = {
+  whipped: { tool: "whipper", ms: 900, at: 350, sfx: "pour" },
+  caramel_drizzle: { tool: "bottle", ms: 1000, at: 250, sfx: "pump" },
+  choco_drizzle: { tool: "bottle", ms: 1000, at: 250, sfx: "pump" },
+  cocoa: { tool: "shaker", ms: 800, at: 300, sfx: "tick" },
+};
 
 /**
  * Wraps an item so it can be dragged (by its ⠿ handle) onto the cup.
@@ -58,6 +67,7 @@ export default function Builder({ preset }: { preset?: string }) {
   const [dragging, setDragging] = useState(false);
   const [msg, setMsg] = useState("");
   const [brewing, setBrewing] = useState(false);
+  const [serve, setServe] = useState<"idle" | "stir" | "lid" | "slide">("idle");
   const cupCtl = useAnimation();
   const pendingTop = useRef(new Set<string>());
   const cupRef = useRef<HTMLDivElement>(null);
@@ -152,28 +162,53 @@ export default function Builder({ preset }: { preset?: string }) {
       return;
     }
     const add = () => { const l = cur().toppings; patch({ toppings: l.includes(id) ? l : [...l, id] }); pendingTop.current.delete(id); };
-    play("drop");
-    if (from) {
+    const d = DISPENSE[id];
+    if (d) {
+      // squirt / drizzle / shake it on: the cup builds up while the tool is running
+      pendingTop.current.add(id);
+      play(d.sfx);
+      fx.pourFor(`top-${id}`, TOP_COLOR[id] ?? "#c68642", d.tool, d.ms);
+      setTimeout(add, d.at);
+      cheer(t.price, true, d.at + 150);
+    } else if (from) {
+      play("drop");
       pendingTop.current.add(id);
       fx.fly(`art:${id}`, from, TOP_COLOR[id] ?? "#c68642");
-      setTimeout(add, 560);
+      setTimeout(add, 430);
       cheer(t.price, true, 600);
-    } else { add(); fx.burst(TOP_COLOR[id] ?? "#c68642"); cheer(t.price); }
+    } else { play("drop"); add(); fx.burst(TOP_COLOR[id] ?? "#c68642"); cheer(t.price); }
     say(`${t.name} added`);
   };
 
-  function finish() {
-    if (error) return;
+  // Serve it: stir, put the lid on (open-top drinks with toppings stay open), ring the bell, slide it across the counter.
+  async function finish() {
+    if (error || serve !== "idle") return;
+    const cfg = structuredClone(c);
+    const calm = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (!calm) {
+      setServe("stir");
+      play("pour");
+      void cupCtl.start({ rotate: [0, -3, 3, -3, 3, 0], y: [0, -5, 0, -5, 0], transition: { duration: 1 } });
+      await sleep(1000);
+      if (cfg.toppings.length === 0) { setServe("lid"); play("tap"); await sleep(550); }
+      setServe("slide");
+      play("ding");
+      fx.haptic(30);
+      ["#c68642", "#7a9e5a", "#b5446e", "#fffdf8"].forEach((col, i) => fx.burst(col, i * 90));
+      await cupCtl.start({ x: 480, rotate: 8, opacity: 0, transition: { duration: 0.6, ease: "easeIn" } });
+    }
     play("chime");
-    if (editingId) { updateCart(editingId, finalName, structuredClone(c)); reset(); router.push("/cart"); return; }
-    addToCart(finalName, structuredClone(c));
+    if (editingId) { updateCart(editingId, finalName, cfg); reset(); router.push("/cart"); return; }
+    addToCart(finalName, cfg);
     setAdded(true);
   }
+  // Bring the cup back for the next drink.
+  const nextDrink = () => { cupCtl.set({ x: 0, y: 0, rotate: 0, opacity: 1 }); setServe("idle"); reset(); setAdded(false); };
 
   const dnd = { cupRef, onActive: setDragging };
 
   return (
-    <div className="pb-28">
+    <div className="overflow-x-clip pb-28">
       <FxLayer />
       <p className="sr-only" aria-live="polite">{msg}</p>
       <ol className="mb-5 flex gap-1.5 overflow-x-auto" aria-label="Steps">
@@ -187,7 +222,7 @@ export default function Builder({ preset }: { preset?: string }) {
       <div className="flex flex-col gap-6 lg:grid lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)]">
         <aside className="sticky top-[4.75rem] z-20 bg-cream pb-2 lg:top-[5.5rem] lg:self-start lg:pb-0">
           <motion.div ref={cupRef} data-cup animate={cupCtl} className={`card grid place-items-center bg-gradient-to-b from-milk to-surface !p-3 lg:!p-5 ${dragging ? "ring-4 ring-caramel ring-offset-2 ring-offset-cream" : ""}`}>
-            <Cup config={c} className="h-36 lg:h-72" />
+            <Cup config={c} live lid={serve === "lid" || serve === "slide"} stir={serve === "stir"} className="h-36 lg:h-72" />
             <p className="hidden font-display text-lg font-bold lg:block">{finalName}</p>
             <div className="mt-1 lg:hidden"><StatChips s={stats} /></div>
             {dragging && <p className="text-sm font-semibold text-caramel">Drop it on the cup!</p>}
@@ -332,7 +367,7 @@ export default function Builder({ preset }: { preset?: string }) {
           <div><div className="text-xs opacity-60">Total</div><div className="font-display text-2xl font-bold">{fmt(cents)}</div></div>
           <div className="flex gap-2">
             <button className="btn-ghost" disabled={step === 0} onClick={() => { play("tap"); setStep(step - 1); }}>Back</button>
-            {last ? <button className="btn-accent" disabled={!!error} onClick={finish}>{editingId ? "Update basket" : "Add to basket"}</button>
+            {last ? <button className="btn-accent" disabled={!!error || serve !== "idle"} onClick={() => void finish()}>{serve !== "idle" ? "Serving…" : editingId ? "Update basket" : "Add to basket"}</button>
               : <button className="btn-primary" onClick={() => { play("tap"); setStep(step + 1); }}>Next</button>}
           </div>
         </div>
@@ -343,8 +378,8 @@ export default function Builder({ preset }: { preset?: string }) {
           <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="card w-full max-w-sm text-center">
             <div className="text-4xl">🎉</div><h2 className="mt-2 text-2xl font-bold">Added to basket!</h2><p className="mb-4 text-sm opacity-70">{finalName} is ready. Build another?</p>
             <div className="grid gap-2">
-              <button className="btn-accent" onClick={() => { reset(); setAdded(false); }}>Build another</button>
-              <Link href="/cart" onClick={() => reset()} className="btn-primary">View basket</Link>
+              <button className="btn-accent" onClick={nextDrink}>Build another</button>
+              <Link href="/cart" onClick={() => { cupCtl.set({ x: 0, y: 0, rotate: 0, opacity: 1 }); setServe("idle"); reset(); }} className="btn-primary">View basket</Link>
             </div>
           </motion.div>
         </div>

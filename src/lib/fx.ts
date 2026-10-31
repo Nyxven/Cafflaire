@@ -3,7 +3,7 @@
 // Builder emits events; <FxLayer /> draws them on a fixed, click-through overlay.
 
 export type Pt = { x: number; y: number };
-export type Tool = "pitcher" | "nozzle";
+export type Tool = "pitcher" | "nozzle" | "bottle" | "whipper" | "shaker";
 
 export type Fx =
   | { id: number; kind: "fly"; glyph: string; from: Pt; to: Pt }
