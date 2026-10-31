@@ -2,7 +2,7 @@
 // Tiny synthesized sound effects (Web Audio) — no audio files needed. Respects the mute toggle.
 import { useSound } from "./store";
 
-export type Sfx = "tap" | "drop" | "pour" | "chime";
+export type Sfx = "tap" | "drop" | "pour" | "chime" | "pump" | "tick";
 let ctx: AudioContext | null = null;
 
 function audio() {
@@ -35,6 +35,8 @@ export function play(s: Sfx) {
     const t = a.currentTime;
     if (s === "tap") tone(a, 620, t, 0.07, "triangle", 0.09);
     else if (s === "drop") { tone(a, 330, t, 0.12, "sine", 0.14); tone(a, 220, t + 0.05, 0.14, "sine", 0.1); }
+    else if (s === "pump") { tone(a, 150, t, 0.09, "square", 0.07); tone(a, 95, t + 0.04, 0.12, "sine", 0.12); }
+    else if (s === "tick") tone(a, 900, t, 0.05, "triangle", 0.07);
     else if (s === "chime") { tone(a, 784, t, 0.18, "sine", 0.12); tone(a, 1047, t + 0.1, 0.28, "sine", 0.12); }
     else {
       // pour: filtered noise sweeping downward

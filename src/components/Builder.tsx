@@ -1,29 +1,26 @@
 "use client";
-import { motion, useDragControls } from "framer-motion";
+import { motion, useAnimation, useDragControls } from "framer-motion";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { RefObject, useEffect, useRef, useState } from "react";
+import { EspressoMachine, HoldButton, Pips, PitcherIcon, SyrupRow } from "./Bar";
 import Cup from "./Cup";
+import FxLayer from "./FxLayer";
 import StatsPanel, { StatChips } from "./Stats";
 import {
   BASES, BASE_MAP, MATCHA_PRICE, MILKS, SHOT_PRICE, SIZES, SYRUPS, SYRUP_MAP, TOPPINGS, MILK_MAP, TOPPING_MAP, Size, Temp,
   calcStats, defaultName, fmt, priceLines, unitPrice, validateConfig,
 } from "@/lib/catalog";
+import * as fx from "@/lib/fx";
 import { play } from "@/lib/sound";
 import { useBuilder, useCart } from "@/lib/store";
 
 const STEPS = ["Base", "Size & temp", "Shots", "Milk", "Sweeteners", "Toppings", "Review"];
 
-function Stepper({ value, min, max, onChange, label }: { value: number; min: number; max: number; onChange: (n: number) => void; label: string }) {
-  const go = (n: number) => { play("tap"); onChange(n); };
-  return (
-    <div className="flex items-center gap-3">
-      <button className="btn-ghost h-11 w-11 !p-0 text-xl" aria-label={`Less ${label}`} disabled={value <= min} onClick={() => go(value - 1)}>−</button>
-      <motion.span key={value} initial={{ scale: 1.4 }} animate={{ scale: 1 }} className="w-8 text-center text-2xl font-bold" aria-live="polite">{value}</motion.span>
-      <button className="btn-ghost h-11 w-11 !p-0 text-xl" aria-label={`More ${label}`} disabled={value >= max} onClick={() => go(value + 1)}>+</button>
-    </div>
-  );
-}
+const SYRUP_COLOR: Record<string, string> = { sugar: "#f5f0e6", brown: "#8a5a34", honey: "#e0a526", vanilla: "#f1dfa4", caramel: "#c68642", hazelnut: "#8b5a3c", mocha: "#4a2a1a" };
+const TOP_GLYPH: Record<string, string> = { whipped: "☁️", caramel_drizzle: "🍯", choco_drizzle: "🍫", cocoa: "🟫", cookie: "🍪", marshmallow: "⚪" };
+const TOP_COLOR: Record<string, string> = { whipped: "#fffdf8", caramel_drizzle: "#c68642", choco_drizzle: "#3b2417", cocoa: "#5a3a28", cookie: "#b07a45", marshmallow: "#ffffff" };
+const cur = () => useBuilder.getState().config;
 
 /**
  * Wraps an item so it can be dragged (by its ⠿ handle) onto the cup.
@@ -50,7 +47,7 @@ function Drag({ cupRef, onDrop, onActive, children }: { cupRef: RefObject<HTMLDi
   );
 }
 
-const choice = (on: boolean) => `w-full rounded-2xl border-2 p-4 pr-10 text-left transition active:scale-[.98] ${on ? "border-caramel bg-caramel/10" : "border-transparent bg-surface hover:border-espresso/20"} shadow-soft`;
+const choice = (on: boolean) => `relative w-full rounded-2xl border-2 p-4 pr-10 text-left transition active:scale-[.98] ${on ? "border-caramel bg-caramel/10" : "border-transparent bg-surface hover:border-espresso/20"} shadow-soft`;
 
 export default function Builder({ preset }: { preset?: string }) {
   const router = useRouter();
@@ -60,6 +57,9 @@ export default function Builder({ preset }: { preset?: string }) {
   const [added, setAdded] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [msg, setMsg] = useState("");
+  const [brewing, setBrewing] = useState(false);
+  const cupCtl = useAnimation();
+  const pendingTop = useRef(new Set<string>());
   const cupRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { if (preset) loadPreset(preset); }, [preset, loadPreset]);
@@ -71,19 +71,96 @@ export default function Builder({ preset }: { preset?: string }) {
   const finalName = name.trim() || defaultName(c);
   const last = step === STEPS.length - 1;
 
-  // ---- actions shared by tap / keyboard / drag-and-drop ----
+  // ---- actions shared by tap / hold / keyboard / drag-and-drop ----
   const say = (m: string) => setMsg(m);
-  const setMilk = (id: string) => { patch({ milk: id }); play("pour"); say(`${MILK_MAP[id].name} milk selected`); };
-  const addPump = (id: string) => { const n = Math.min(5, (c.syrups[id] ?? 0) + 1); patch({ syrups: { ...c.syrups, [id]: n } }); play("drop"); say(`${SYRUP_MAP[id].name}: ${n} pump${n > 1 ? "s" : ""}`); };
-  const toggleTopping = (id: string, mode: "toggle" | "add" = "toggle") => {
-    const on = c.toppings.includes(id);
-    if (on && mode === "add") return;
-    patch({ toppings: on ? c.toppings.filter((x) => x !== id) : [...c.toppings, id] });
-    play(on ? "tap" : "drop");
-    say(`${TOPPING_MAP[id].name} ${on ? "removed" : "added"}`);
+  const bump = () => { void cupCtl.start({ rotate: [0, -2.5, 2.5, 0], scale: [1, 1.035, 1], transition: { duration: 0.35 } }); };
+  const cheer = (cents: number, up = true, delay = 0) => {
+    fx.floatText(cents ? `${up ? "+" : "−"}${fmt(cents)}` : up ? "Free!" : "Removed", !up, delay);
+    fx.haptic(up ? 14 : 8);
+    bump();
   };
-  const addShot = () => { patch({ shots: Math.min(4, c.shots + 1) }); play("drop"); say("Espresso shot added"); };
-  const addMatcha = () => { patch({ matcha: Math.min(3, c.matcha + 1) }); play("drop"); say("Matcha scoop added"); };
+
+  // Milk: a pitcher swings over the cup and pours; the cup fills while it pours.
+  const setMilk = (id: string) => {
+    if (cur().milk === id) { play("tap"); return; }
+    if (id === "none") { patch({ milk: id }); play("tap"); say("No milk"); bump(); return; }
+    const m = MILK_MAP[id];
+    play("pour");
+    fx.pourFor("milk", m.color, "pitcher", 1000);
+    setTimeout(() => patch({ milk: id }), 300);
+    cheer(m.price, true, 400);
+    say(`${m.name} milk selected`);
+  };
+
+  // Espresso: hold the button, shots drip into the cup (one per ~second).
+  const addShot = () => {
+    const n = cur().shots;
+    if (n >= 4) { fx.floatText("Cup's full of shots!", true); return false; }
+    patch({ shots: n + 1 });
+    play(n === 0 ? "drop" : "tick");
+    cheer(SHOT_PRICE);
+    say(`Espresso shots: ${n + 1}`);
+    return true;
+  };
+  const removeShot = () => { const n = cur().shots; if (n <= 0) return; patch({ shots: n - 1 }); play("tap"); cheer(SHOT_PRICE, false); say(`Espresso shots: ${n - 1}`); };
+  const startBrew = () => { setBrewing(true); play("pour"); fx.streamOn("espresso", "#4a2c18", "nozzle"); };
+  const stopBrew = () => { setBrewing(false); fx.release("espresso", 450); };
+
+  // Matcha: a scoop flies from the button into the cup.
+  const addMatcha = (from?: Element | null) => {
+    const n = cur().matcha;
+    if (n >= 3) { fx.floatText("Max scoops", true); return; }
+    patch({ matcha: n + 1 });
+    play("drop");
+    if (from) fx.fly("🥄", from, "#7a9e5a"); else fx.burst("#7a9e5a");
+    cheer(MATCHA_PRICE, true, from ? 600 : 0);
+    say(`Matcha scoops: ${n + 1}`);
+  };
+  const removeMatcha = () => { const n = cur().matcha; if (n <= 0) return; patch({ matcha: n - 1 }); play("tap"); cheer(MATCHA_PRICE, false); say(`Matcha scoops: ${n - 1}`); };
+
+  // Syrups: press (or hold) the bottle pump, a drip falls into the cup.
+  const pump = (id: string) => {
+    const n = cur().syrups[id] ?? 0;
+    if (n >= 5) { fx.floatText("Max pumps", true); return false; }
+    patch({ syrups: { ...cur().syrups, [id]: n + 1 } });
+    play("pump");
+    fx.drip(SYRUP_COLOR[id] ?? "#c68642");
+    cheer(SYRUP_MAP[id].price, true, 330);
+    say(`${SYRUP_MAP[id].name}: ${n + 1} pump${n + 1 > 1 ? "s" : ""}`);
+    return true;
+  };
+  const unpump = (id: string) => {
+    const n = cur().syrups[id] ?? 0;
+    if (n <= 0) return;
+    const next = { ...cur().syrups, [id]: n - 1 };
+    if (n - 1 === 0) delete next[id];
+    patch({ syrups: next });
+    play("tap");
+    cheer(SYRUP_MAP[id].price, false);
+    say(`${SYRUP_MAP[id].name}: ${n - 1} pump${n - 1 === 1 ? "" : "s"}`);
+  };
+
+  // Toppings: they fly into the cup (tap again to take them off).
+  const toggleTopping = (id: string, mode: "toggle" | "add" = "toggle", from?: Element | null) => {
+    if (pendingTop.current.has(id)) return;
+    const t = TOPPING_MAP[id];
+    const on = cur().toppings.includes(id);
+    if (on && mode === "add") { fx.floatText("Already on!", true); return; }
+    if (on) {
+      patch({ toppings: cur().toppings.filter((x) => x !== id) });
+      play("tap"); cheer(t.price, false); say(`${t.name} removed`);
+      return;
+    }
+    const add = () => { const l = cur().toppings; patch({ toppings: l.includes(id) ? l : [...l, id] }); pendingTop.current.delete(id); };
+    play("drop");
+    if (from) {
+      pendingTop.current.add(id);
+      fx.fly(TOP_GLYPH[id] ?? t.emoji, from, TOP_COLOR[id] ?? "#c68642");
+      setTimeout(add, 560);
+      cheer(t.price, true, 600);
+    } else { add(); fx.burst(TOP_COLOR[id] ?? "#c68642"); cheer(t.price); }
+    say(`${t.name} added`);
+  };
 
   function finish() {
     if (error) return;
@@ -97,6 +174,7 @@ export default function Builder({ preset }: { preset?: string }) {
 
   return (
     <div className="pb-28">
+      <FxLayer />
       <p className="sr-only" aria-live="polite">{msg}</p>
       <ol className="mb-5 flex gap-1.5 overflow-x-auto" aria-label="Steps">
         {STEPS.map((s, i) => (
@@ -108,12 +186,12 @@ export default function Builder({ preset }: { preset?: string }) {
 
       <div className="flex flex-col gap-6 lg:grid lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)]">
         <aside className="sticky top-[4.75rem] z-20 bg-cream pb-2 lg:top-[5.5rem] lg:self-start lg:pb-0">
-          <div ref={cupRef} className={`card grid place-items-center bg-gradient-to-b from-milk to-surface !p-3 transition lg:!p-5 ${dragging ? "ring-4 ring-caramel ring-offset-2 ring-offset-cream" : ""}`}>
+          <motion.div ref={cupRef} data-cup animate={cupCtl} className={`card grid place-items-center bg-gradient-to-b from-milk to-surface !p-3 lg:!p-5 ${dragging ? "ring-4 ring-caramel ring-offset-2 ring-offset-cream" : ""}`}>
             <Cup config={c} className="h-36 lg:h-72" />
             <p className="hidden font-display text-lg font-bold lg:block">{finalName}</p>
             <div className="mt-1 lg:hidden"><StatChips s={stats} /></div>
             {dragging && <p className="text-sm font-semibold text-caramel">Drop it on the cup!</p>}
-          </div>
+          </motion.div>
           <div className="card mt-4 hidden lg:block"><StatsPanel s={stats} /></div>
         </aside>
 
@@ -160,22 +238,41 @@ export default function Builder({ preset }: { preset?: string }) {
 
           {step === 2 && (
             <div className="space-y-4">
-              <p className="text-sm opacity-70">Use − / + or drag a card&apos;s ⠿ handle onto the cup.</p>
-              <Drag {...dnd} onDrop={addShot}><div className="card"><h2 className="text-2xl font-bold">Espresso shots</h2><p className="mb-3 text-sm opacity-70">{fmt(SHOT_PRICE)} each · ~63 mg caffeine</p>
-                <Stepper label="shots" value={c.shots} min={0} max={4} onChange={(shots) => patch({ shots })} /></div></Drag>
-              <Drag {...dnd} onDrop={addMatcha}><div className="card"><h2 className="text-2xl font-bold">Matcha scoops</h2><p className="mb-3 text-sm opacity-70">{fmt(MATCHA_PRICE)} each · ~35 mg caffeine</p>
-                <Stepper label="scoops" value={c.matcha} min={0} max={3} onChange={(matcha) => patch({ matcha })} /></div></Drag>
+              <p className="text-sm opacity-70">Press and hold the button to pull shots, about one per second. Or drag a card&apos;s ⠿ handle onto the cup.</p>
+              <Drag {...dnd} onDrop={() => { addShot(); }}>
+                <div className="card !pr-12">
+                  <h2 className="text-2xl font-bold">Espresso shots</h2>
+                  <p className="text-sm opacity-70">{fmt(SHOT_PRICE)} each · ~63 mg caffeine</p>
+                  <EspressoMachine brewing={brewing} />
+                  <div className="mt-3 flex items-center gap-3">
+                    <HoldButton label="Hold to brew espresso" fire={addShot} interval={950} onStart={startBrew} onStop={stopBrew} className="btn-accent !min-h-14 flex-1 text-lg">☕ Hold to brew</HoldButton>
+                    <button type="button" className="btn-ghost h-14 w-14 shrink-0 !p-0 text-xl" aria-label="Remove a shot" disabled={c.shots <= 0} onClick={removeShot}>↩</button>
+                  </div>
+                  <div className="mt-3 flex items-center justify-between"><Pips n={c.shots} max={4} /><span className="text-sm font-semibold">{c.shots} shot{c.shots === 1 ? "" : "s"}</span></div>
+                </div>
+              </Drag>
+              <Drag {...dnd} onDrop={() => addMatcha(null)}>
+                <div className="card !pr-12">
+                  <h2 className="text-2xl font-bold">Matcha scoops</h2>
+                  <p className="text-sm opacity-70">{fmt(MATCHA_PRICE)} each · ~35 mg caffeine</p>
+                  <div className="mt-3 flex items-center gap-3">
+                    <button type="button" className="btn-accent !min-h-14 flex-1 !bg-matcha text-lg" onClick={(e) => addMatcha(e.currentTarget)}>🥄 Scoop matcha</button>
+                    <button type="button" className="btn-ghost h-14 w-14 shrink-0 !p-0 text-xl" aria-label="Remove a scoop" disabled={c.matcha <= 0} onClick={removeMatcha}>↩</button>
+                  </div>
+                  <div className="mt-3 flex items-center justify-between"><Pips n={c.matcha} max={3} color="bg-matcha" /><span className="text-sm font-semibold">{c.matcha} scoop{c.matcha === 1 ? "" : "s"}</span></div>
+                </div>
+              </Drag>
               {c.shots + c.matcha < 1 && <p className="text-sm text-berry">Add at least one shot or scoop.</p>}
             </div>
           )}
 
           {step === 3 && (
-            <div><h2 className="mb-1 text-2xl font-bold">Pick your milk</h2><p className="mb-3 text-sm opacity-70">Tap one, or drag a ⠿ handle onto the cup.</p>
+            <div><h2 className="mb-1 text-2xl font-bold">Pick your milk</h2><p className="mb-3 text-sm opacity-70">Tap a pitcher and watch it pour, or drag a ⠿ handle onto the cup.</p>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                 {MILKS.map((m) => (
                   <Drag key={m.id} {...dnd} onDrop={() => setMilk(m.id)}>
                     <button aria-pressed={c.milk === m.id} className={choice(c.milk === m.id)} onClick={() => setMilk(m.id)}>
-                      <span className="mb-2 block h-6 w-6 rounded-full border border-espresso/20" style={{ background: m.color }} />
+                      <PitcherIcon color={m.id === "none" ? "transparent" : m.color} className="mb-1 h-12 w-12" />
                       <div className="font-bold">{m.name}</div><div className="text-sm opacity-70">{m.price ? `+${fmt(m.price)}` : "Free"}</div>
                     </button>
                   </Drag>
@@ -185,14 +282,11 @@ export default function Builder({ preset }: { preset?: string }) {
           )}
 
           {step === 4 && (
-            <div><h2 className="mb-1 text-2xl font-bold">Sweeten it up</h2><p className="mb-3 text-sm opacity-70">Up to 5 pumps each. Use − / + or drag a ⠿ handle onto the cup to add a pump.</p>
+            <div><h2 className="mb-1 text-2xl font-bold">Sweeten it up</h2><p className="mb-3 text-sm opacity-70">Press a bottle to pump (hold to keep pumping), up to 5 each. Or drag a ⠿ handle onto the cup.</p>
               <div className="space-y-3">
                 {SYRUPS.map((s) => (
-                  <Drag key={s.id} {...dnd} onDrop={() => addPump(s.id)}>
-                    <div className="card flex items-center justify-between gap-2 !p-4 !pr-12">
-                      <div><div className="font-bold">{s.emoji} {s.name}</div><div className="text-sm opacity-70">{s.price ? `${fmt(s.price)} / pump` : "Free"}</div></div>
-                      <Stepper label={s.name} value={c.syrups[s.id] ?? 0} min={0} max={5} onChange={(n) => patch({ syrups: { ...c.syrups, [s.id]: n } })} />
-                    </div>
+                  <Drag key={s.id} {...dnd} onDrop={() => { pump(s.id); }}>
+                    <SyrupRow name={`${s.emoji} ${s.name}`} price={s.price ? `${fmt(s.price)} / pump` : "Free"} color={SYRUP_COLOR[s.id] ?? "#c68642"} n={c.syrups[s.id] ?? 0} max={5} pump={() => pump(s.id)} unpump={() => unpump(s.id)} />
                   </Drag>
                 ))}
               </div>
@@ -200,14 +294,15 @@ export default function Builder({ preset }: { preset?: string }) {
           )}
 
           {step === 5 && (
-            <div><h2 className="mb-1 text-2xl font-bold">Top it off</h2><p className="mb-3 text-sm opacity-70">Tap to toggle, or drag a ⠿ handle onto the cup.</p>
+            <div><h2 className="mb-1 text-2xl font-bold">Top it off</h2><p className="mb-3 text-sm opacity-70">Tap a topping and it flies into the cup. Tap again to take it off, or drag a ⠿ handle onto the cup.</p>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                 {TOPPINGS.map((t) => {
                   const on = c.toppings.includes(t.id);
                   return (
-                    <Drag key={t.id} {...dnd} onDrop={() => toggleTopping(t.id, "add")}>
-                      <button aria-pressed={on} className={choice(on)} onClick={() => toggleTopping(t.id)}>
+                    <Drag key={t.id} {...dnd} onDrop={() => toggleTopping(t.id, "add", null)}>
+                      <button aria-pressed={on} className={choice(on)} onClick={(e) => toggleTopping(t.id, "toggle", e.currentTarget)}>
                         <div className="text-2xl">{t.emoji}</div><div className="font-bold">{t.name}</div><div className="text-sm opacity-70">+{fmt(t.price)}</div>
+                        {on && <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 500, damping: 12 }} className="absolute bottom-2 right-2 grid h-6 w-6 place-items-center rounded-full bg-caramel text-xs font-bold text-white" aria-hidden>✓</motion.span>}
                       </button>
                     </Drag>
                   );

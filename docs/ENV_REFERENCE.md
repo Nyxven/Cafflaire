@@ -11,6 +11,13 @@ Set these in Vercel → Project → Settings → Environment Variables (Producti
 | `SMTP_PASS` | SMTP key (shown once) | Brevo → Generate a new SMTP key |
 | `DATABASE_URL`, `DATABASE_URL_UNPOOLED`, `POSTGRES_*` | Neon connection strings | Added automatically by Vercel → Storage → Neon. Do not delete |
 
+## Local-only (never needed on Vercel)
+| Name | Purpose | How to get it |
+|---|---|---|
+| `ELEVENLABS_API_KEY` | Lets `scripts/generate-voice.mjs` make the voice clips on your own computer. The website never uses it | ElevenLabs → Profile → API Keys. Put it ONLY in `.env.local`. If it ever leaks, delete it and make a new one |
+| `ELEVENLABS_VOICE_ID` | Which (female) voice to use | `node scripts/generate-voice.mjs --list` |
+| `ELEVENLABS_MODEL_ID` | Optional, default `eleven_multilingual_v2` | |
+
 ## Config (not secret)
 | Name | Example | Notes |
 |---|---|---|
