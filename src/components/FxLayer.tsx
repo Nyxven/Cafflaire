@@ -2,6 +2,7 @@
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { Fx, Tool, cupSpot, onFx, onStream } from "@/lib/fx";
+import ToppingArt from "./ToppingArt";
 
 function ToolSprite({ tool, color }: { tool: Tool; color: string }) {
   if (tool === "pitcher") {
@@ -39,11 +40,11 @@ function Piece({ e }: { e: Fx }) {
     const mx = (from.x + to.x) / 2;
     return (
       <motion.div
-        className="absolute left-0 top-0 text-3xl leading-none"
-        initial={{ x: from.x - 16, y: from.y - 16, scale: 0.8, rotate: 0, opacity: 1 }}
-        animate={{ x: [from.x - 16, mx - 16, to.x - 16], y: [from.y - 16, peak, to.y - 16], scale: [0.8, 1.3, 0.7], rotate: [0, 170, 340], opacity: [1, 1, 0.9] }}
+        className="absolute left-0 top-0 grid h-10 w-10 place-items-center text-3xl leading-none"
+        initial={{ x: from.x - 20, y: from.y - 20, scale: 0.8, rotate: 0, opacity: 1 }}
+        animate={{ x: [from.x - 20, mx - 20, to.x - 20], y: [from.y - 20, peak, to.y - 20], scale: [0.8, 1.3, 0.7], rotate: [0, 170, 340], opacity: [1, 1, 0.9] }}
         transition={{ duration: 0.62, x: { duration: 0.62, ease: "linear" }, y: { duration: 0.62, times: [0, 0.45, 1], ease: ["easeOut", "easeIn"] } }}
-      >{e.glyph}</motion.div>
+      >{e.glyph.startsWith("art:") ? <ToppingArt id={e.glyph.slice(4)} className="h-10 w-10" /> : e.glyph}</motion.div>
     );
   }
   if (e.kind === "burst") {

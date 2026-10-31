@@ -6,6 +6,7 @@ import { RefObject, useEffect, useRef, useState } from "react";
 import { EspressoMachine, HoldButton, Pips, PitcherIcon, SyrupRow } from "./Bar";
 import Cup from "./Cup";
 import FxLayer from "./FxLayer";
+import ToppingArt from "./ToppingArt";
 import StatsPanel, { StatChips } from "./Stats";
 import {
   BASES, BASE_MAP, MATCHA_PRICE, MILKS, SHOT_PRICE, SIZES, SYRUPS, SYRUP_MAP, TOPPINGS, MILK_MAP, TOPPING_MAP, Size, Temp,
@@ -18,7 +19,6 @@ import { useBuilder, useCart } from "@/lib/store";
 const STEPS = ["Base", "Size & temp", "Shots", "Milk", "Sweeteners", "Toppings", "Review"];
 
 const SYRUP_COLOR: Record<string, string> = { sugar: "#f5f0e6", brown: "#8a5a34", honey: "#e0a526", vanilla: "#f1dfa4", caramel: "#c68642", hazelnut: "#8b5a3c", mocha: "#4a2a1a" };
-const TOP_GLYPH: Record<string, string> = { whipped: "☁️", caramel_drizzle: "🍯", choco_drizzle: "🍫", cocoa: "🟫", cookie: "🍪", marshmallow: "⚪" };
 const TOP_COLOR: Record<string, string> = { whipped: "#fffdf8", caramel_drizzle: "#c68642", choco_drizzle: "#3b2417", cocoa: "#5a3a28", cookie: "#b07a45", marshmallow: "#ffffff" };
 const cur = () => useBuilder.getState().config;
 
@@ -155,7 +155,7 @@ export default function Builder({ preset }: { preset?: string }) {
     play("drop");
     if (from) {
       pendingTop.current.add(id);
-      fx.fly(TOP_GLYPH[id] ?? t.emoji, from, TOP_COLOR[id] ?? "#c68642");
+      fx.fly(`art:${id}`, from, TOP_COLOR[id] ?? "#c68642");
       setTimeout(add, 560);
       cheer(t.price, true, 600);
     } else { add(); fx.burst(TOP_COLOR[id] ?? "#c68642"); cheer(t.price); }
@@ -301,7 +301,7 @@ export default function Builder({ preset }: { preset?: string }) {
                   return (
                     <Drag key={t.id} {...dnd} onDrop={() => toggleTopping(t.id, "add", null)}>
                       <button aria-pressed={on} className={choice(on)} onClick={(e) => toggleTopping(t.id, "toggle", e.currentTarget)}>
-                        <div className="text-2xl">{t.emoji}</div><div className="font-bold">{t.name}</div><div className="text-sm opacity-70">+{fmt(t.price)}</div>
+                        <div className="mb-2 grid h-16 w-16 place-items-center rounded-2xl bg-milk"><ToppingArt id={t.id} className="h-14 w-14" /></div><div className="font-bold">{t.name}</div><div className="text-sm opacity-70">+{fmt(t.price)}</div>
                         {on && <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 500, damping: 12 }} className="absolute bottom-2 right-2 grid h-6 w-6 place-items-center rounded-full bg-caramel text-xs font-bold text-white" aria-hidden>✓</motion.span>}
                       </button>
                     </Drag>
