@@ -223,18 +223,66 @@ export default function Receipt({ data }: { data: ReceiptData }) {
     setNote("This device can't share directly, so the receipt was saved as an image instead.");
   }
 
+  const typeLine = data.fulfilment === "pickup"
+    ? `Pickup · ${data.pickupTime ? clock(data.pickupTime) : "ASAP"}`
+    : `Delivery${data.city ? ` · ${data.city}` : ""}`;
+  const Row = ({ k, v, mono = false }: { k: string; v: string; mono?: boolean }) => (
+    <div className="flex justify-between gap-3"><span className="opacity-60">{k}</span><span className={mono ? "font-mono font-bold" : "font-medium"}>{v}</span></div>
+  );
+  const Dash = () => <div aria-hidden className="my-3 border-t border-dashed border-[#3b2417]/30" />;
+
   return (
-    <section className="card space-y-4" aria-labelledby="receipt-title">
+    <section id="receipt" className="card space-y-4" aria-labelledby="receipt-title">
       <div>
         <h2 id="receipt-title" className="text-xl font-bold">Your receipt</h2>
         <p className="text-sm opacity-70">Keep a copy or send it to a friend.</p>
       </div>
-      <canvas ref={ref} role="img" aria-label={`Receipt for order ${data.number}, total ${fmt(data.totalCents)}`} className="mx-auto h-auto w-full max-w-[340px] rounded-2xl" />
-      <div className="grid grid-cols-2 gap-3">
-        <button type="button" className="btn-accent" onClick={save}>⬇ Save image</button>
-        <button type="button" className="btn-ghost" onClick={share}>↗ Share</button>
+
+      {/* The receipt itself (always paper-coloured, even in dark mode) */}
+      <div className="mx-auto w-full max-w-[340px] drop-shadow-[0_6px_14px_rgba(59,36,23,0.2)]">
+        <svg aria-hidden className="block h-2 w-full" preserveAspectRatio="none"><defs><pattern id="zz-top" width="12" height="8" patternUnits="userSpaceOnUse"><polygon points="0,8 6,0 12,8" fill="#fffdf8" /></pattern></defs><rect width="100%" height="8" fill="url(#zz-top)" /></svg>
+        <div className="bg-[#fffdf8] px-6 py-4 text-[13px] text-[#3b2417]">
+          <div className="text-center">
+            <p className="font-display text-3xl font-bold">Cafflaire</p>
+            <p className="mt-1 text-[11px] font-semibold tracking-[0.2em] text-[#c68642]">ORDER RECEIPT</p>
+          </div>
+          <Dash />
+          <div className="space-y-1.5">
+            <Row k="Order" v={data.number} mono />
+            <Row k="Date" v={when(data.createdAt)} />
+            <Row k="Type" v={typeLine} />
+          </div>
+          <Dash />
+          <ul className="space-y-3">
+            {data.items.map((i, k) => (
+              <li key={k}>
+                <div className="flex justify-between gap-3 font-bold"><span>{i.qty}× {i.name}</span><span className="shrink-0">{fmt(i.unitCents * i.qty)}</span></div>
+                <p className="pl-1.5 text-xs opacity-60">{[i.size, ...i.details].join(" · ")}</p>
+                {i.qty > 1 && <p className="pl-1.5 text-xs opacity-60">{fmt(i.unitCents)} each</p>}
+              </li>
+            ))}
+          </ul>
+          <Dash />
+          <div className="space-y-1.5">
+            <Row k="Subtotal" v={fmt(data.subtotalCents)} />
+            <Row k="Delivery fee" v={data.deliveryFeeCents ? fmt(data.deliveryFeeCents) : "Free"} />
+          </div>
+          <div className="mt-2 flex items-baseline justify-between"><span className="text-base font-bold">TOTAL</span><span className="font-display text-xl font-bold">{fmt(data.totalCents)}</span></div>
+          <p className="mt-2 text-xs opacity-60">Payment: cash on {data.fulfilment === "pickup" ? "pickup" : "delivery"}</p>
+          <Dash />
+          <p className="text-center font-display text-[15px] italic">Thank you for ordering!</p>
+        </div>
+        <svg aria-hidden className="block h-2 w-full" preserveAspectRatio="none"><defs><pattern id="zz-bot" width="12" height="8" patternUnits="userSpaceOnUse"><polygon points="0,0 6,8 12,0" fill="#fffdf8" /></pattern></defs><rect width="100%" height="8" fill="url(#zz-bot)" /></svg>
+      </div>
+
+      <div className="mx-auto grid max-w-[340px] grid-cols-2 gap-3">
+        <button type="button" className="btn-ghost" onClick={save}>⬇ Save image</button>
+        <button type="button" className="btn-accent" onClick={share}>↗ Share</button>
       </div>
       <p role="status" className="min-h-5 text-center text-sm opacity-80">{note}</p>
+
+      {/* Hidden: used only to make the PNG for Save / Share */}
+      <canvas ref={ref} hidden aria-hidden />
     </section>
   );
 }

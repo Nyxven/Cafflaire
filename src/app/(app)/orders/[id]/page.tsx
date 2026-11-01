@@ -38,13 +38,11 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
   return (
     <div className="space-y-6">
       <RefreshEvery />
-      {placed && <div className="rounded-2xl bg-matcha/20 p-4 font-semibold" role="status">🎉 Order placed! We&apos;re on it.</div>}
+      {placed && <div className="rounded-2xl bg-matcha/20 p-4 font-semibold" role="status">🎉 Order placed! We&apos;re on it. <a href="#receipt" className="underline">View your receipt ↓</a></div>}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div><h1 className="text-4xl font-bold">{o.number}</h1><p className="opacity-70">{o.createdAt.toLocaleString("en-PH", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Manila" })}</p></div>
         <ReorderButton items={o.items} />
       </div>
-
-      {placed && receiptCard}
 
       {o.status === "cancelled" ? <p className="chip bg-berry/20">Cancelled</p> : (
         <div className="card space-y-4">
@@ -69,7 +67,7 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
           <p>📞 {o.phone}</p>{o.notes && <p>📝 {o.notes}</p>}<p className="mt-1 opacity-70">Cash on {o.fulfilment === "pickup" ? "pickup" : "delivery"}</p></div>
         <div className="card space-y-1 text-sm"><div className="flex justify-between"><span>Subtotal</span><span>{fmt(o.subtotalCents)}</span></div><div className="flex justify-between"><span>Delivery</span><span>{fmt(o.deliveryFeeCents)}</span></div><div className="flex justify-between text-lg font-bold"><span>Total</span><span>{fmt(o.totalCents)}</span></div></div>
       </div>
-      {!placed && receiptCard}
+      {receiptCard}
     </div>
   );
 }
