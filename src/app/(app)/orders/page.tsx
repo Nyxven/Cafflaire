@@ -1,8 +1,11 @@
 import { desc, eq } from "drizzle-orm";
 import Link from "next/link";
+import OrderProgress from "@/components/OrderProgress";
+import { RefreshEvery } from "@/components/Misc";
 import { db } from "@/lib/db";
 import { orders } from "@/lib/db/schema";
 import { fmt } from "@/lib/catalog";
+import { STATUS_LABEL } from "@/lib/order-flow";
 import { getSession } from "@/lib/session";
 
 export const metadata = { title: "My Orders" };
@@ -13,6 +16,7 @@ export default async function Orders() {
   const rows = await db.select().from(orders).where(eq(orders.userId, s.user.id)).orderBy(desc(orders.createdAt));
   return (
     <>
+      <RefreshEvery />
       <h1 className="mb-5 text-4xl font-bold">My orders</h1>
       {rows.length === 0 ? (
         <div className="card py-12 text-center"><div className="text-5xl">📦</div><p className="my-3">No orders yet.</p><Link href="/build" className="btn-accent">Build my first coffee</Link></div>
@@ -20,9 +24,12 @@ export default async function Orders() {
         <ul className="space-y-3">
           {rows.map((o) => (
             <li key={o.id}>
-              <Link href={`/orders/${o.id}`} className="card flex items-center justify-between gap-3 transition hover:-translate-y-0.5">
-                <div><div className="font-bold">{o.number}</div><div className="text-sm opacity-70">{o.createdAt.toLocaleDateString("en-PH", { dateStyle: "medium" })} · {o.items.reduce((a, i) => a + i.qty, 0)} drink(s) · {o.fulfilment}</div></div>
-                <div className="text-right"><div className="font-bold">{fmt(o.totalCents)}</div><span className={`chip capitalize ${statusStyle[o.status]}`}>{o.status.replaceAll("_", " ")}</span></div>
+              <Link href={`/orders/${o.id}`} className="card block transition hover:-translate-y-0.5">
+                <div className="flex items-center justify-between gap-3">
+                  <div><div className="font-bold">{o.number}</div><div className="text-sm opacity-70">{o.createdAt.toLocaleDateString("en-PH", { dateStyle: "medium", timeZone: "Asia/Manila" })} · {o.items.reduce((a, i) => a + i.qty, 0)} drink(s) · {o.fulfilment}</div></div>
+                  <div className="text-right"><div className="font-bold">{fmt(o.totalCents)}</div><span className={`chip ${statusStyle[o.status]}`}>{STATUS_LABEL[o.status] ?? o.status}</span></div>
+                </div>
+                {o.status !== "cancelled" && <div className="mt-4 px-1"><OrderProgress fulfilment={o.fulfilment} status={o.status} compact /></div>}
               </Link>
             </li>
           ))}

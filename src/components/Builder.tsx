@@ -25,8 +25,8 @@ const STEPS = ["Base", "Size & temp", "Shots", "Milk", "Sweeteners", "Toppings",
 
 const ESPRESSO = "#4a2c18";
 const MATCHA = "#7a9e5a";
-const SYRUP_COLOR: Record<string, string> = { sugar: "#f5f0e6", brown: "#8a5a34", honey: "#e0a526", vanilla: "#f1dfa4", caramel: "#c68642", hazelnut: "#8b5a3c", mocha: "#4a2a1a" };
-const TOP_COLOR: Record<string, string> = { whipped: "#fffdf8", caramel_drizzle: "#c68642", choco_drizzle: "#3b2417", cocoa: "#5a3a28", cookie: "#b07a45", marshmallow: "#ffffff" };
+const SYRUP_COLOR: Record<string, string> = { sugar: "#f5f0e6", brown: "#8a5a34", honey: "#e0a526", vanilla: "#f1dfa4", caramel: "#c68642", hazelnut: "#8b5a3c", mocha: "#4a2a1a", ube: "#8e6bb5", pandan: "#7aa65a", saltedcaramel: "#b9762f", cinnamon: "#a0522d", pumpkin: "#d98324", peppermint: "#bfe8d4" };
+const TOP_COLOR: Record<string, string> = { whipped: "#fffdf8", caramel_drizzle: "#c68642", choco_drizzle: "#3b2417", cocoa: "#5a3a28", cookie: "#b07a45", marshmallow: "#ffffff", coldfoam: "#fffaf2", cinnamon_dust: "#a0522d", chips: "#3b2417", pearls: "#2a1a12", sprinkles: "#f06fa4" };
 const cur = () => useBuilder.getState().config;
 
 type Done = { name: string; config: Config; cents: number };

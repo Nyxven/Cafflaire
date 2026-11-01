@@ -5,7 +5,7 @@ import PresetCard from "./PresetCard";
 import { Item, Stagger } from "./Reveal";
 import { PRESETS } from "@/lib/catalog";
 
-const TABS = ["All", "Coffee", "Frappe", "Matcha"] as const;
+const TABS = ["All", "Coffee", "Frappe", "Matcha", "Specialty"] as const;
 
 export default function MenuGrid() {
   const [tab, setTab] = useState<(typeof TABS)[number]>("All");

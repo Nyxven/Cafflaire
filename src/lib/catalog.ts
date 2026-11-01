@@ -61,6 +61,10 @@ export const BASES: Base[] = [
   { id: "icedcoffee", name: "Iced Coffee", emoji: "🧊", desc: "Cold, bold and refreshing", price: 5500, sugar: 0, cal: 5, temps: ["iced"], milkRatio: 0.4, defaults: { temp: "iced", shots: 2, matcha: 0, milk: "whole" } },
   { id: "frappe", name: "Frappe", emoji: "🥤", desc: "Blended, icy and creamy", price: 9000, sugar: 15, cal: 100, temps: ["blended"], milkRatio: 0.75, defaults: { temp: "blended", shots: 1, matcha: 0, milk: "whole" } },
   { id: "matcha", name: "Matcha Latte", emoji: "🍵", desc: "Ceremonial-style matcha with milk", price: 8000, sugar: 4, cal: 20, temps: ["hot", "iced"], milkRatio: 0.65, defaults: { temp: "hot", shots: 0, matcha: 2, milk: "whole" } },
+  { id: "flatwhite", name: "Flat White", emoji: "🥛", desc: "Strong espresso, silky microfoam", price: 6500, sugar: 0, cal: 10, temps: ["hot"], milkRatio: 0.5, defaults: { temp: "hot", shots: 2, matcha: 0, milk: "whole" } },
+  { id: "macchiato", name: "Macchiato", emoji: "🍮", desc: "Espresso marked with a spoon of foam", price: 5500, sugar: 0, cal: 8, temps: ["hot", "iced"], milkRatio: 0.25, defaults: { temp: "hot", shots: 2, matcha: 0, milk: "whole" } },
+  { id: "coldbrew", name: "Cold Brew", emoji: "🫗", desc: "Slow-steeped, smooth and strong", price: 6500, sugar: 0, cal: 5, temps: ["iced"], milkRatio: 0.2, defaults: { temp: "iced", shots: 2, matcha: 0, milk: "none" } },
+  { id: "spanish", name: "Spanish Latte", emoji: "🍯", desc: "Espresso with sweet condensed milk", price: 7000, sugar: 12, cal: 70, temps: ["hot", "iced"], milkRatio: 0.65, defaults: { temp: "iced", shots: 2, matcha: 0, milk: "whole" } },
 ];
 
 export interface Milk { id: string; name: string; price: number; sugar: number; cal: number; color: string; dairy: boolean; nuts: boolean }
@@ -72,6 +76,9 @@ export const MILKS: Milk[] = [
   { id: "almond", name: "Almond", price: 3000, sugar: 4, cal: 60, color: "#efe2cc", dairy: false, nuts: true },
   { id: "soy", name: "Soy", price: 2500, sugar: 6, cal: 90, color: "#f0e6c8", dairy: false, nuts: false },
   { id: "coconut", name: "Coconut", price: 3000, sugar: 5, cal: 80, color: "#f6f1e6", dairy: false, nuts: false },
+  { id: "lactosefree", name: "Lactose-free", price: 2000, sugar: 8, cal: 100, color: "#f6eedf", dairy: true, nuts: false },
+  { id: "macadamia", name: "Macadamia", price: 3500, sugar: 2, cal: 70, color: "#f1e5d1", dairy: false, nuts: true },
+  { id: "condensed", name: "Condensed milk", price: 1500, sugar: 18, cal: 130, color: "#f3e2bd", dairy: true, nuts: false },
 ];
 
 export interface Syrup { id: string; name: string; emoji: string; price: number; sugar: number; cal: number; vegan: boolean; nuts: boolean }
@@ -83,6 +90,12 @@ export const SYRUPS: Syrup[] = [
   { id: "caramel", name: "Caramel", emoji: "🍮", price: 2000, sugar: 5, cal: 22, vegan: true, nuts: false },
   { id: "hazelnut", name: "Hazelnut", emoji: "🌰", price: 2000, sugar: 5, cal: 20, vegan: true, nuts: true },
   { id: "mocha", name: "Mocha sauce", emoji: "🍫", price: 2500, sugar: 5, cal: 25, vegan: true, nuts: false },
+  { id: "ube", name: "Ube", emoji: "🟣", price: 2500, sugar: 5, cal: 22, vegan: true, nuts: false },
+  { id: "pandan", name: "Pandan", emoji: "🌿", price: 2500, sugar: 5, cal: 20, vegan: true, nuts: false },
+  { id: "saltedcaramel", name: "Salted caramel", emoji: "🥨", price: 2500, sugar: 5, cal: 24, vegan: true, nuts: false },
+  { id: "cinnamon", name: "Cinnamon", emoji: "🍂", price: 2000, sugar: 4, cal: 18, vegan: true, nuts: false },
+  { id: "pumpkin", name: "Pumpkin spice", emoji: "🎃", price: 2500, sugar: 5, cal: 22, vegan: true, nuts: false },
+  { id: "peppermint", name: "Peppermint", emoji: "🍬", price: 2000, sugar: 5, cal: 20, vegan: true, nuts: false },
 ];
 
 export interface Topping { id: string; name: string; emoji: string; price: number; sugar: number; cal: number; vegan: boolean; dairy: boolean }
@@ -93,6 +106,11 @@ export const TOPPINGS: Topping[] = [
   { id: "cocoa", name: "Cocoa dust", emoji: "✨", price: 1000, sugar: 0, cal: 5, vegan: true, dairy: false },
   { id: "cookie", name: "Cookie crumbs", emoji: "🍪", price: 2000, sugar: 4, cal: 40, vegan: true, dairy: false },
   { id: "marshmallow", name: "Marshmallows", emoji: "🤍", price: 2000, sugar: 6, cal: 30, vegan: false, dairy: false },
+  { id: "coldfoam", name: "Cold foam", emoji: "🫧", price: 2000, sugar: 2, cal: 30, vegan: false, dairy: true },
+  { id: "cinnamon_dust", name: "Cinnamon dust", emoji: "🍂", price: 1000, sugar: 0, cal: 3, vegan: true, dairy: false },
+  { id: "chips", name: "Dark choco chips", emoji: "🍫", price: 2000, sugar: 4, cal: 45, vegan: true, dairy: false },
+  { id: "pearls", name: "Tapioca pearls", emoji: "⚫", price: 2500, sugar: 8, cal: 70, vegan: true, dairy: false },
+  { id: "sprinkles", name: "Rainbow sprinkles", emoji: "🌈", price: 1500, sugar: 4, cal: 20, vegan: true, dairy: false },
 ];
 
 const byId = <T extends { id: string }>(list: T[]) => Object.fromEntries(list.map((x) => [x.id, x])) as Record<string, T>;
@@ -192,7 +210,7 @@ export function calcStats(c: Config): Stats {
   return { caffeineMg, caffeineLevel, sugarG: Math.round(sugar), sweetness, calories: Math.round(cal), oz: SIZES[c.size].oz, tags };
 }
 
-export interface Preset { slug: string; name: string; category: "Coffee" | "Frappe" | "Matcha"; desc: string; config: Config }
+export interface Preset { slug: string; name: string; category: "Coffee" | "Frappe" | "Matcha" | "Specialty"; desc: string; config: Config }
 const P = (base: string, o: Partial<Config> = {}): Config => ({ ...defaultConfig(base), ...o });
 export const PRESETS: Preset[] = [
   { slug: "caffe-latte", name: "Caffè Latte", category: "Coffee", desc: "Classic double-shot latte", config: P("latte") },
@@ -204,6 +222,23 @@ export const PRESETS: Preset[] = [
   { slug: "mocha-frappe", name: "Mocha Frappe", category: "Frappe", desc: "Icy chocolate-coffee treat", config: P("frappe", { syrups: { mocha: 2 }, toppings: ["whipped", "choco_drizzle"] }) },
   { slug: "matcha-latte", name: "Matcha Latte", category: "Matcha", desc: "Earthy and smooth", config: P("matcha") },
   { slug: "iced-matcha", name: "Iced Matcha", category: "Matcha", desc: "Refreshing oat matcha over ice", config: P("matcha", { temp: "iced", milk: "oat", syrups: { honey: 1 } }) },
+  // ---- more variety (keep appended at the END: the home page picks presets by position) ----
+  { slug: "flat-white", name: "Flat White", category: "Coffee", desc: "Strong, velvety and not too milky", config: P("flatwhite") },
+  { slug: "macchiato", name: "Macchiato", category: "Coffee", desc: "A short, bold espresso with a touch of foam", config: P("macchiato", { size: "s" }) },
+  { slug: "cold-brew", name: "Cold Brew", category: "Coffee", desc: "Slow-steeped, smooth and black", config: P("coldbrew") },
+  { slug: "salted-caramel-cold-brew", name: "Salted Caramel Cold Brew", category: "Coffee", desc: "Cold brew with salted caramel and cold foam", config: P("coldbrew", { milk: "whole", syrups: { saltedcaramel: 2 }, toppings: ["coldfoam"] }) },
+  { slug: "pumpkin-spice-latte", name: "Pumpkin Spice Latte", category: "Coffee", desc: "Cozy spice, whipped cream and cinnamon", config: P("latte", { syrups: { pumpkin: 2 }, toppings: ["whipped", "cinnamon_dust"] }) },
+  { slug: "peppermint-mocha", name: "Peppermint Mocha", category: "Coffee", desc: "Christmas in a cup", config: P("mocha", { syrups: { mocha: 1, peppermint: 2 }, toppings: ["whipped", "choco_drizzle"] }) },
+  { slug: "spanish-latte", name: "Spanish Latte", category: "Specialty", desc: "Sweet, creamy and made with condensed milk", config: P("spanish", { temp: "hot", milk: "condensed" }) },
+  { slug: "iced-spanish-latte", name: "Iced Spanish Latte", category: "Specialty", desc: "The cold, sweet-and-creamy favorite", config: P("spanish", { temp: "iced", milk: "condensed" }) },
+  { slug: "ube-latte", name: "Ube Latte", category: "Specialty", desc: "Purple, nutty and a little bit sweet", config: P("latte", { temp: "iced", shots: 1, syrups: { ube: 3 }, toppings: ["coldfoam"] }) },
+  { slug: "pandan-latte", name: "Pandan Coconut Latte", category: "Specialty", desc: "Fragrant pandan with creamy coconut milk", config: P("latte", { temp: "iced", milk: "coconut", syrups: { pandan: 2 } }) },
+  { slug: "brown-sugar-pearl-latte", name: "Brown Sugar Pearl Latte", category: "Specialty", desc: "Iced latte with chewy tapioca pearls", config: P("latte", { temp: "iced", syrups: { brown: 3 }, toppings: ["pearls"] }) },
+  { slug: "cookies-cream-frappe", name: "Cookies & Cream Frappe", category: "Frappe", desc: "Blended with cookie crumbs and whipped cream", config: P("frappe", { syrups: { vanilla: 1 }, toppings: ["whipped", "cookie"] }) },
+  { slug: "java-chip-frappe", name: "Java Chip Frappe", category: "Frappe", desc: "Chocolate chips, mocha and a mountain of cream", config: P("frappe", { syrups: { mocha: 2 }, toppings: ["whipped", "chips", "choco_drizzle"] }) },
+  { slug: "ube-matcha", name: "Ube Matcha", category: "Matcha", desc: "Purple ube meets green matcha over ice", config: P("matcha", { temp: "iced", milk: "coconut", syrups: { ube: 2 } }) },
+  { slug: "dirty-matcha", name: "Dirty Matcha", category: "Matcha", desc: "Iced matcha latte with a shot of espresso", config: P("matcha", { temp: "iced", shots: 1, matcha: 2 }) },
+  { slug: "rainbow-frappe", name: "Rainbow Party Frappe", category: "Frappe", desc: "Vanilla blended with sprinkles and cream", config: P("frappe", { syrups: { vanilla: 2 }, toppings: ["whipped", "sprinkles"] }) },
 ];
 export const PRESET_MAP = Object.fromEntries(PRESETS.map((p) => [p.slug, p]));
 

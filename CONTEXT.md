@@ -3,6 +3,26 @@
 ## What this is
 **Cafflaire**: a mobile + desktop coffee-ordering webapp (hackathon MVP). Customers build their own coffee in a barista-style builder (live SVG cup, caffeine/sweetness/calorie stats, running price), add several drinks to a basket, then check out for pickup or delivery (cash). PHP ₱, integer centavos. Hackathon pitch angle: AI-assisted MVP focused on secure, simple user authentication.
 
+## Latest change (2026-11-01, admin + orders + menu variety + receipts chat) — NOT yet built/tested
+**Written WITHOUT running typecheck/lint/tests/build** (that sandbox had no node_modules and no network). First thing next chat: run `npm run typecheck && npm run lint && npm test && npm run build` and send any error. Reviewed by eye only.
+
+**What changed**
+- **Admin (`/admin`)**: orders are now cards, split into "Active" and "Completed & cancelled". Each drink shows a small cup, size/temperature, base, and every ingredient chip (shots, milk, syrups, toppings), plus phone, address/pickup time and the customer's notes. Times shown in Manila time. **Delete**: a "🗑 Delete" button appears only on COMPLETED orders (asks "Delete … for good?" first). `DELETE /api/admin/orders/[id]`: admin only, uuid-checked, 409 unless status is `completed`. NOTE: deleting removes the order from the customer's My Orders too (hard delete, no DB change).
+- **My Orders progress**: new `src/components/OrderProgress.tsx` (+ `src/lib/order-flow.ts`: `flowFor`, `STATUS_LABEL`, `STATUS_HINT`). Dots joined by a horizontal line that fills with caramel as the status advances (animated, current step pulses, ✓ on finished steps, respects reduced motion). Full version on `/orders/[id]` with a one-line status hint; thin `compact` version on the `/orders` list. `/orders` now also auto-refreshes (RefreshEvery). Order pages now use Asia/Manila time (were UTC before).
+- **Drink variety** (all in `src/lib/catalog.ts`, no DB change; server still re-prices):
+  - Bases +4: Flat White, Macchiato, Cold Brew (iced only), Spanish Latte.
+  - Milks +3: Lactose-free, Macadamia (nuts), Condensed milk.
+  - Syrups +6: Ube, Pandan, Salted caramel, Cinnamon, Pumpkin spice, Peppermint.
+  - Toppings +5: Cold foam, Cinnamon dust, Dark choco chips, Tapioca pearls, Rainbow sprinkles (art in `ToppingArt.tsx`, cup drawing in `Cup.tsx`, colours in `Builder.tsx` `SYRUP_COLOR`/`TOP_COLOR`).
+  - Presets +16, **appended at the end** (home page uses `PRESETS[0]`, `[5]`, `[7]`: do not reorder). New preset category **"Specialty"** (menu tab + marquee tint). `prefs.ts` category list is unchanged (stored taste answers stay valid); Specialty drinks just don't get the category bonus.
+  - `/api/orders` topping limit raised 10 → 20 (there are now 11 toppings).
+- **Receipts**: new `src/components/Receipt.tsx` draws a paper-style receipt on a `<canvas>` (no new packages). Buttons: **Save image** (PNG download) and **Share** (phone share sheet via Web Share API with the image; if the device can't share files it saves the image instead). Shown right under the "Order placed" banner after checkout (`?placed=1`), and at the bottom of every non-cancelled order page. The receipt does NOT print phone number or street address (only the city for delivery).
+- **Tests**: new `tests/variety.test.ts` (unique ids, every base buildable, preset order kept, order flow). Existing tests should still pass (new presets are validated by `catalog`/`prefs` tests).
+
+**Files changed:** NEW `src/lib/order-flow.ts`, `src/components/OrderProgress.tsx`, `src/components/Receipt.tsx`, `tests/variety.test.ts`. MODIFIED `src/lib/catalog.ts`, `src/lib/prefs.ts` (2 type casts), `src/components/{Cup,ToppingArt,Builder,MenuGrid,DrinkMarquee,Misc}.tsx`, `src/app/api/orders/route.ts`, `src/app/api/admin/orders/[id]/route.ts`, `src/app/(app)/admin/page.tsx`, `src/app/(app)/orders/page.tsx`, `src/app/(app)/orders/[id]/page.tsx`. No migration, no new env vars, no new packages.
+
+**Not verified / ideas**: how the new toppings look on the cup (pearls at the bottom, cold foam on top) and the receipt layout on a real phone; Web Share on iOS/Android; emoji-free receipt font look; the GitHub repo (`Nyxven/Cafflaire`) still looked OLD when checked (README mentions Google sign-in): confirm the latest code was pushed. Possible next: also let admin delete cancelled orders; show the receipt as PDF; Specialty option in the onboarding quiz.
+
 ## Latest change (builder animation upgrade, "Papa's Freezeria" feel) — VERIFIED in a real browser
 **Checks run:** `tsc --noEmit` OK · `next lint` OK · `next build` OK (only the old `jose` Edge-runtime warning) · `vitest`: 31 pass, **2 fail** (see Known issues) · headless Chrome (desktop 1280px, phone 390px, reduced-motion) drove the real `/build` page with 0 console errors. This also confirms the earlier "UNVERIFIED" animation/onboarding code compiles and builds.
 
@@ -67,7 +87,7 @@ Brand Cafflaire · cozy espresso/cream/caramel look · cash on pickup/delivery �
 ## Key files
 - `src/lib/catalog.ts` ingredients, prices, stats, validation, presets (shared client+server; server re-prices every order)
 - `src/lib/prefs.ts` + `prefs-server.ts` (taste quiz logic), `theme.ts`; `src/lib/auth.ts` `createAuth({db, sendOtp, withNext})`; `auth-client.ts`; `mail.ts` (SMTP OTP emails); `crypto.ts` (AES-256-GCM field encryption); `db/schema.ts` (encrypted column types `encText`/`detText`/`encJson`); `store.ts`; `sound.ts`
-- `src/components/` Builder, Cup (SVG), Navbar, Icons, Ring, Reveal, HeroCup, Onboarding, SignatureCard, PresetCard, MenuGrid, ProfileTabs, SettingsPanel (ThemeChoice, SoundSwitch), AuthForm (login/signup/verify/forgot/reset), AccountPanel, CartView, CheckoutForm, Truck, SoundToggle
+- `src/lib/order-flow.ts` (order steps/labels). `src/components/` OrderProgress, Receipt, Builder, Cup (SVG), Navbar, Icons, Ring, Reveal, HeroCup, Onboarding, SignatureCard, PresetCard, MenuGrid, ProfileTabs, SettingsPanel (ThemeChoice, SoundSwitch), AuthForm (login/signup/verify/forgot/reset), AccountPanel, CartView, CheckoutForm, Truck, SoundToggle
 - `src/app/(auth)` login, signup, forgot-password · `src/app/welcome` truck · `src/app/onboarding` · `src/app/(app)` home, menu, build, cart, checkout, orders, profile (+ `profile/settings`), admin · `src/app/api/{auth,orders,prefs,admin/orders/[id],health}`
 - `drizzle/0000*.sql … 0002_user_prefs.sql` migrations; `scripts/migrate.mjs` runs on Vercel via `vercel-build` (skips if no DB URL)
 - `tests/` catalog, crypto, prefs, auth.flow (PGlite)

@@ -1,7 +1,7 @@
 import Cup from "./Cup";
 import { PRESETS, Preset, fmt, unitPrice } from "@/lib/catalog";
 
-const TINT: Record<Preset["category"], string> = { Coffee: "bg-caramel/15", Frappe: "bg-berry/15", Matcha: "bg-matcha/25" };
+const TINT: Record<Preset["category"], string> = { Coffee: "bg-caramel/15", Frappe: "bg-berry/15", Matcha: "bg-matcha/25", Specialty: "bg-caramel/30" };
 
 function DrinkCard({ p }: { p: Preset }) {
   return (

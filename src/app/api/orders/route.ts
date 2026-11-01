@@ -13,7 +13,7 @@ const config = z.object({
   matcha: z.number(),
   milk: z.string(),
   syrups: z.record(z.string(), z.number()),
-  toppings: z.array(z.string()).max(10),
+  toppings: z.array(z.string()).max(20),
 });
 
 const body = z.object({

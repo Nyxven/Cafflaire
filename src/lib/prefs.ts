@@ -114,7 +114,7 @@ function score(preset: Preset, config: Config, input: Prefs): number {
   const p = normalize(input);
   const st = calcStats(config);
   let s = 0;
-  if (p.categories.includes(preset.category)) s += 4;
+  if ((p.categories as readonly string[]).includes(preset.category)) s += 4;
   if (p.temps.includes(config.temp)) s += 2;
   s -= Math.abs(st.sweetness - SWEET_TARGET[p.sweetness]);
   if (p.milk === "none") s += config.milk === "none" ? 2 : -1;
@@ -136,7 +136,7 @@ export function reasonsFor(pick: Pick, p: Prefs): string[] {
   const c = pick.config;
   const st = calcStats(c);
   const out: string[] = [];
-  if (p.categories.includes(pick.preset.category)) out.push(`${pick.preset.category} is your kind of drink`);
+  if ((p.categories as readonly string[]).includes(pick.preset.category)) out.push(`${pick.preset.category} is your kind of drink`);
   out.push(c.temp === "hot" ? "Served hot" : c.temp === "iced" ? "Served over ice" : "Blended smooth");
   out.push(`${st.caffeineMg} mg caffeine`);
   if (c.milk !== "none") out.push(`Made with ${LABELS.milk[c.milk as Prefs["milk"]]?.toLowerCase() ?? c.milk + " milk"}`);

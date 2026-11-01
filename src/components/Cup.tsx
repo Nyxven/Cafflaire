@@ -130,6 +130,36 @@ export default function Cup({ config, className = "h-64", pour, ripple = 0, shin
           {[[72, 0], [100, -4], [124, 0]].map(([x, dy], i) => <rect key={i} x={x - 8} y={top + dy - 14} width="16" height="14" rx="4" fill="#fff" stroke="#eadfd0" />)}
         </motion.g>
       )}
+      {has("coldfoam") && (
+        <motion.g clipPath="url(#cupclip)" initial={drop} animate={land} transition={spring}>
+          <rect x="30" y={top - 2} width="140" height="18" fill="#fffaf2" fillOpacity=".95" />
+          <path d={`M30 ${top + 16} q17 8 35 0 t35 0 t35 0 t35 0`} fill="#fffaf2" stroke="#eadfd0" strokeWidth="1.5" />
+        </motion.g>
+      )}
+      {has("cinnamon_dust") && (
+        <motion.g initial={drop} animate={land} transition={spring}>
+          {Array.from({ length: 16 }).map((_, i) => <circle key={i} cx={60 + ((i * 29) % 80)} cy={top + 2 + (i % 4) * 2} r="1.8" fill="#a0522d" />)}
+        </motion.g>
+      )}
+      {has("chips") && (
+        <motion.g initial={drop} animate={land} transition={spring}>
+          {[[72, 0], [92, -4], [110, 0], [128, -3], [100, -9]].map(([x, dy], i) => <path key={i} d="M0 -6 L7 5 L-7 5 Z" transform={`translate(${x} ${top + dy - 4}) rotate(${i * 40})`} fill="#3b2417" stroke="#5a3a28" strokeWidth="1" />)}
+        </motion.g>
+      )}
+      {has("pearls") && (
+        <motion.g initial={drop} animate={land} transition={spring}>
+          {[[74, 243], [90, 245], [106, 245], [122, 243], [82, 231], [98, 232], [114, 231]].map(([x, y], i) => (
+            <g key={i}><circle cx={x} cy={y} r="6.5" fill="#2a1a12" /><circle cx={x - 2} cy={y - 2} r="1.6" fill="#fff" opacity=".5" /></g>
+          ))}
+        </motion.g>
+      )}
+      {has("sprinkles") && (
+        <motion.g initial={drop} animate={land} transition={spring}>
+          {[[66, "#f06fa4"], [78, "#4cc3d9"], [90, "#ffd23f"], [102, "#7ac74f"], [114, "#ff8a3d"], [126, "#f06fa4"], [72, "#ffd23f"], [96, "#4cc3d9"], [120, "#7ac74f"]].map(([x, c], i) => (
+            <rect key={i} x={Number(x) - 5} y={top - 12 - (i % 3) * 3} width="10" height="3.6" rx="1.8" transform={`rotate(${i * 37} ${x} ${top - 10})`} fill={String(c)} />
+          ))}
+        </motion.g>
+      )}
       {has("whipped") && (
         <motion.g initial={drop} animate={land} transition={spring}>
           <g fill="#fffdf8" stroke="#eadfd0" strokeWidth="1.5">

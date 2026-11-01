@@ -36,3 +36,31 @@ export function StatusSelect({ id, status, options }: { id: string; status: stri
     </select>
   );
 }
+
+/** Admin: delete a COMPLETED order. Asks "sure?" first. The server checks the order really is completed. */
+export function DeleteOrderButton({ id, number }: { id: string; number: string }) {
+  const router = useRouter();
+  const [ask, setAsk] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+
+  async function remove() {
+    setBusy(true);
+    setErr("");
+    const res = await fetch(`/api/admin/orders/${id}`, { method: "DELETE" });
+    const data = await res.json().catch(() => ({}));
+    setBusy(false);
+    if (!res.ok) { setErr(data.error ?? "Could not delete this order."); return; }
+    router.refresh();
+  }
+
+  if (!ask) return <button type="button" className="btn-ghost !min-h-9 !px-3 text-sm text-berry" onClick={() => setAsk(true)} aria-label={`Delete order ${number}`}>🗑 Delete</button>;
+  return (
+    <div className="flex flex-wrap items-center gap-2" role="alertdialog" aria-label={`Confirm deleting order ${number}`}>
+      <span className="text-sm font-semibold">Delete {number} for good?</span>
+      <button type="button" className="btn !min-h-9 !px-3 bg-berry text-sm text-white" disabled={busy} onClick={remove}>{busy ? "Deleting…" : "Yes, delete"}</button>
+      <button type="button" className="btn-ghost !min-h-9 !px-3 text-sm" disabled={busy} onClick={() => { setAsk(false); setErr(""); }}>Keep it</button>
+      {err && <span role="alert" className="w-full text-sm text-berry">{err}</span>}
+    </div>
+  );
+}
