@@ -1,95 +1,102 @@
 "use client";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Fx, Tool, cupSpot, onFx, onStream } from "@/lib/fx";
 import ToppingArt from "./ToppingArt";
 
-const OUTLINE = "#3B2417";
+const INK = "#3B2417";
 
-/** The little tool (pitcher, nozzle, squeeze bottle, piping bag, shaker) that hovers over the cup while it dispenses. */
-function ToolSprite({ tool, color }: { tool: Tool; color: string }) {
-  if (tool === "pitcher") {
-    return (
-      <svg viewBox="0 0 64 64" className="h-16 w-16 -rotate-[38deg] drop-shadow" aria-hidden>
-        <path d="M14 14h30l-4 38q-1 6-8 6h-6q-7 0-8-6z" fill={color} stroke={OUTLINE} strokeWidth="3" strokeLinejoin="round" />
-        <path d="M44 20q14 0 14 12t-14 12" fill="none" stroke={OUTLINE} strokeWidth="4" strokeLinecap="round" />
-        <path d="M14 14l-6 -4" stroke={OUTLINE} strokeWidth="4" strokeLinecap="round" />
-      </svg>
-    );
-  }
-  if (tool === "bottle") {
-    return (
-      <svg viewBox="0 0 40 64" className="h-16 w-10 drop-shadow" aria-hidden>
-        <path d="M12 4h16q4 0 4 6v30q0 6-6 8l-4 3h-4l-4-3q-6-2-6-8V10q0-6 4-6z" fill={color} stroke={OUTLINE} strokeWidth="2.5" strokeLinejoin="round" />
-        <rect x="17" y="49" width="6" height="13" rx="2" fill="#fff" stroke={OUTLINE} strokeWidth="2" />
-        <rect x="12" y="14" width="16" height="14" rx="3" fill="#fff" fillOpacity=".55" />
-      </svg>
-    );
-  }
-  if (tool === "whipper") {
-    return (
-      <svg viewBox="0 0 48 64" className="h-16 w-12 drop-shadow" aria-hidden>
-        <path d="M6 4h36l-16 50h-4z" fill="#fffdf8" stroke={OUTLINE} strokeWidth="2.5" strokeLinejoin="round" />
-        <path d="M20 54h8l2 8h-12z" fill="#e8c27a" stroke={OUTLINE} strokeWidth="2" strokeLinejoin="round" />
-        <path d="M12 12l10 28" stroke="#e6d9c6" strokeWidth="3" strokeLinecap="round" />
-      </svg>
-    );
-  }
-  if (tool === "shaker") {
-    return (
-      <motion.svg viewBox="0 0 40 56" className="h-14 w-10 drop-shadow" aria-hidden animate={{ rotate: [-14, 14, -14] }} transition={{ duration: 0.22, repeat: Infinity }}>
-        <rect x="6" y="2" width="28" height="10" rx="4" fill="#c9c9c9" stroke={OUTLINE} strokeWidth="2.5" />
-        <path d="M8 12h24l-2 38q0 4-4 4h-12q-4 0-4-4z" fill={color} stroke={OUTLINE} strokeWidth="2.5" strokeLinejoin="round" />
-        <circle cx="14" cy="49" r="1.6" fill={OUTLINE} /><circle cx="20" cy="50" r="1.6" fill={OUTLINE} /><circle cx="26" cy="49" r="1.6" fill={OUTLINE} />
-      </motion.svg>
-    );
-  }
+/** Milk pitcher, drawn with its spout at the top-left corner (0,0 of the box = the spout tip). */
+function Pitcher({ color }: { color: string }) {
   return (
-    <svg viewBox="0 0 48 30" className="h-8 w-12 drop-shadow" aria-hidden>
-      <rect x="2" y="2" width="44" height="14" rx="6" fill="#8c8c8c" stroke={OUTLINE} strokeWidth="2.5" />
-      <rect x="19" y="15" width="10" height="13" rx="3" fill="#6f6f6f" stroke={OUTLINE} strokeWidth="2.5" />
+    <svg viewBox="-4 -4 68 68" className="h-[68px] w-[68px] drop-shadow" aria-hidden>
+      <path d="M0 0h30l-4 40q-1 6-8 6h-6q-7 0-8-6z" transform="translate(4 4)" fill={color} stroke={INK} strokeWidth="3" strokeLinejoin="round" />
+      <path d="M38 14q14 0 14 12t-14 12" fill="none" stroke={INK} strokeWidth="4" strokeLinecap="round" />
+      <path d="M4 4l-6 -4" stroke={INK} strokeWidth="4" strokeLinecap="round" />
     </svg>
   );
 }
 
-const WIDTH: Record<Tool, number> = { pitcher: 9, nozzle: 6, bottle: 5, whipper: 14, shaker: 0 };
-
-function Stream({ x, top, height, color, tool }: { x: number; top: number; height: number; color: string; tool: Tool }) {
-  // Sauce and cream sweep left and right over the cup (like drawing a zig-zag); the rest pour straight down.
-  const sweep = tool === "bottle" ? 30 : tool === "whipper" ? 8 : 0;
-  const w = WIDTH[tool];
+function Nozzle() {
   return (
-    <motion.div className="absolute" style={{ left: x, top }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, transition: { duration: 0.2 } }}>
-      <motion.div className="absolute" animate={sweep ? { x: [-sweep, sweep, -sweep] } : { x: 0 }} transition={{ duration: tool === "bottle" ? 0.7 : 0.5, repeat: Infinity, ease: "easeInOut" }}>
-        <div className="absolute -translate-x-1/2 -translate-y-[85%]"><ToolSprite tool={tool} color={color} /></div>
-        {tool === "shaker" ? (
-          // a rain of powder
-          [0, 1, 2, 3, 4, 5].map((i) => (
-            <motion.span key={i} className="absolute h-1.5 w-1.5 rounded-full" style={{ background: color, left: (i % 3) * 9 - 9 }} initial={{ y: 0, opacity: 1 }} animate={{ y: height, opacity: [1, 1, 0] }} transition={{ duration: 0.45, repeat: Infinity, delay: i * 0.07, ease: "easeIn" }} />
-          ))
-        ) : (
-          <>
-            <motion.div className="absolute -translate-x-1/2 origin-top rounded-full" style={{ width: w, background: color, boxShadow: "0 0 0 1.5px rgba(59,36,23,.35)" }} initial={{ height: 0 }} animate={{ height }} transition={{ duration: 0.22, ease: "easeOut" }} />
-            <motion.span className="absolute h-3 w-10 -translate-x-1/2 rounded-full" style={{ top: height - 4, background: color, opacity: 0.8 }} animate={{ scaleX: [0.6, 1.2, 0.6] }} transition={{ duration: 0.35, repeat: Infinity }} />
-          </>
-        )}
-      </motion.div>
+    <svg viewBox="0 0 48 30" className="h-8 w-12 drop-shadow" aria-hidden>
+      <rect x="2" y="2" width="44" height="14" rx="6" fill="#8c8c8c" stroke={INK} strokeWidth="2.5" />
+      <rect x="19" y="15" width="10" height="13" rx="3" fill="#6f6f6f" stroke={INK} strokeWidth="2.5" />
+    </svg>
+  );
+}
+
+/** A tool hovering over the cup with a liquid stream falling into it. */
+function Stream({ x, top, height, color, tool }: { x: number; top: number; height: number; color: string; tool: Tool }) {
+  const pitcher = tool === "pitcher";
+  const w = pitcher ? 9 : 6;
+  return (
+    <motion.div className="absolute left-0 top-0" initial={false} exit={{ opacity: 1, transition: { duration: pitcher ? 0.34 : 0.2 } }}>
+      {/* the tool: a pitcher swings in and tilts, a nozzle just appears */}
+      {pitcher ? (
+        <motion.div
+          className="absolute"
+          style={{ left: x - 4, top: top - 4, transformOrigin: "4px 4px" }}
+          initial={{ x: 96, y: -34, rotate: 0, opacity: 0 }}
+          animate={{ x: 0, y: 0, rotate: -34, opacity: 1 }}
+          exit={{ x: 96, y: -34, rotate: 0, opacity: 0, transition: { duration: 0.32, ease: "easeIn" } }}
+          transition={{ type: "spring", stiffness: 170, damping: 15 }}
+        >
+          <Pitcher color={color} />
+        </motion.div>
+      ) : (
+        <motion.div className="absolute" style={{ left: x - 24, top: top - 26 }} initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8, transition: { duration: 0.18 } }}>
+          <Nozzle />
+        </motion.div>
+      )}
+      {/* the stream starts after the pitcher has tilted */}
+      <motion.div
+        className="absolute origin-top rounded-full"
+        style={{ left: x - w / 2, top, width: w, background: color, boxShadow: "0 0 0 1.5px rgba(59,36,23,.35)" }}
+        initial={{ height: 0 }}
+        animate={{ height }}
+        exit={{ height: 0, transition: { duration: 0.18 } }}
+        transition={{ duration: 0.24, ease: "easeOut", delay: pitcher ? 0.3 : 0 }}
+      />
+      <motion.span
+        className="absolute h-3 w-10 rounded-full"
+        style={{ left: x - 20, top: top + height - 4, background: color }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 0.8, scaleX: [0.6, 1.2, 0.6] }}
+        exit={{ opacity: 0, transition: { duration: 0.15 } }}
+        transition={{ scaleX: { duration: 0.35, repeat: Infinity }, opacity: { delay: pitcher ? 0.4 : 0.1, duration: 0.15 } }}
+      />
     </motion.div>
   );
+}
+
+function Drop({ color }: { color: string }) {
+  return <span className="block h-5 w-3.5 rounded-b-full rounded-t-[60%]" style={{ background: color, boxShadow: "0 0 0 1.5px rgba(59,36,23,.35)" }} />;
 }
 
 function Piece({ e }: { e: Fx }) {
   if (e.kind === "fly") {
     const { from, to } = e;
-    const peak = Math.min(from.y, to.y) - 110;
+    const isDrop = e.glyph.startsWith("drop:");
+    const lift = isDrop ? 26 : e.tilt ? 70 : 110;
+    const peak = Math.min(from.y, to.y) - lift;
     const mx = (from.x + to.x) / 2;
+    const d = e.ms / 1000;
     return (
       <motion.div
         className="absolute left-0 top-0 grid h-10 w-10 place-items-center text-3xl leading-none"
         initial={{ x: from.x - 20, y: from.y - 20, scale: 0.8, rotate: 0, opacity: 1 }}
-        animate={{ x: [from.x - 20, mx - 20, to.x - 20], y: [from.y - 20, peak, to.y - 20], scale: [0.8, 1.3, 0.7], rotate: [0, 170, 340], opacity: [1, 1, 0] }}
-        transition={{ duration: 0.62, x: { duration: 0.62, ease: "linear" }, y: { duration: 0.62, times: [0, 0.45, 1], ease: ["easeOut", "easeIn"] }, opacity: { duration: 0.62, times: [0, 0.8, 1] } }}
-      >{e.glyph.startsWith("art:") ? <ToppingArt id={e.glyph.slice(4)} className="h-10 w-10" /> : e.glyph}</motion.div>
+        animate={{
+          x: [from.x - 20, mx - 20, to.x - 20],
+          y: [from.y - 20, peak, to.y - 20],
+          scale: isDrop ? [0.8, 1, 0.8] : [0.8, 1.3, e.tilt ? 1.1 : 0.7],
+          rotate: isDrop ? [0, 0, 0] : e.tilt ? [0, -12, -62] : [0, 170, 340],
+          opacity: [1, 1, isDrop ? 0.9 : e.tilt ? 1 : 0.9],
+        }}
+        transition={{ duration: d, x: { duration: d, ease: "linear" }, y: { duration: d, times: [0, 0.45, 1], ease: ["easeOut", "easeIn"] } }}
+      >
+        {isDrop ? <Drop color={e.glyph.slice(5)} /> : e.glyph.startsWith("art:") ? <ToppingArt id={e.glyph.slice(4)} className="h-10 w-10" /> : e.glyph}
+      </motion.div>
     );
   }
   if (e.kind === "burst") {
@@ -102,11 +109,40 @@ function Piece({ e }: { e: Fx }) {
       </div>
     );
   }
-  if (e.kind === "drip") {
+  if (e.kind === "sparkle") {
+    const count = e.big ? 10 : 6;
+    const r = e.big ? 88 : 56;
     return (
       <div className="absolute" style={{ left: e.at.x, top: e.at.y }}>
-        <motion.span className="absolute -ml-[5px] block h-4 w-2.5 rounded-full" style={{ background: e.color, boxShadow: "0 0 0 1.5px rgba(59,36,23,.35)" }} initial={{ y: 0, opacity: 1 }} animate={{ y: 78, opacity: [1, 1, 0] }} transition={{ duration: 0.33, ease: "easeIn" }} />
+        {Array.from({ length: count }).map((_, i) => {
+          const a = (i / count) * Math.PI * 2 + 0.3;
+          const far = r * (i % 2 ? 0.7 : 1);
+          return (
+            <motion.span key={i} className="absolute -ml-2 -mt-2 text-base leading-none text-caramel" style={{ fontSize: e.big ? 22 - (i % 3) * 4 : 16 }}
+              initial={{ x: 0, y: 0, opacity: 0, scale: 0.2, rotate: 0 }}
+              animate={{ x: Math.cos(a) * far, y: Math.sin(a) * far * 0.8, opacity: [0, 1, 0], scale: [0.2, 1.2, 0.4], rotate: 90 }}
+              transition={{ duration: e.big ? 0.9 : 0.7, ease: "easeOut", delay: (i % 3) * 0.04 }}>✦</motion.span>
+          );
+        })}
       </div>
+    );
+  }
+  if (e.kind === "powder") {
+    return (
+      <div className="absolute" style={{ left: e.at.x, top: e.at.y }}>
+        {Array.from({ length: 12 }).map((_, i) => (
+          <motion.span key={i} className="absolute h-1.5 w-1.5 rounded-full" style={{ background: e.color, left: ((i * 7) % 21) - 10 }}
+            initial={{ y: 0, opacity: 0 }} animate={{ y: 62 + (i % 4) * 6, opacity: [0, 1, 1, 0] }} transition={{ duration: 0.45, delay: i * 0.025, ease: "easeIn" }} />
+        ))}
+      </div>
+    );
+  }
+  if (e.kind === "drizzle") {
+    return (
+      <svg width="44" height="112" viewBox="0 0 44 112" className="absolute -translate-x-1/2 overflow-visible" style={{ left: e.at.x, top: e.at.y }}>
+        <motion.path d="M22 0 C 8 18, 36 34, 22 52 S 8 88, 22 108" fill="none" stroke={e.color} strokeWidth="6" strokeLinecap="round"
+          initial={{ pathLength: 0, opacity: 1 }} animate={{ pathLength: [0, 1, 1], opacity: [1, 1, 0] }} transition={{ duration: 0.85, times: [0, 0.55, 1], ease: "easeOut" }} />
+      </svg>
     );
   }
   return (
@@ -120,11 +156,17 @@ export default function FxLayer() {
   const reduce = useReducedMotion();
   const [items, setItems] = useState<Fx[]>([]);
   const [streams, setStreams] = useState<Record<string, { color: string; tool: Tool }>>({});
+  const timers = useRef(new Set<ReturnType<typeof setTimeout>>());
 
-  useEffect(() => onFx((e) => {
-    setItems((l) => [...l, e]);
-    setTimeout(() => setItems((l) => l.filter((x) => x.id !== e.id)), 1300);
-  }), []);
+  useEffect(() => {
+    const live = timers.current;
+    const off = onFx((e) => {
+      setItems((l) => [...l, e]);
+      const t = setTimeout(() => { live.delete(t); setItems((l) => l.filter((x) => x.id !== e.id)); }, 1300);
+      live.add(t);
+    });
+    return () => { off(); live.forEach(clearTimeout); live.clear(); };
+  }, []);
 
   useEffect(() => onStream((m) => setStreams((s) => {
     const next = { ...s };
@@ -134,7 +176,7 @@ export default function FxLayer() {
   })), []);
 
   const spot = Object.keys(streams).length ? cupSpot() : null;
-  const top = spot ? Math.max(70, spot.top - 60) : 0;
+  const top = spot ? spot.top + 14 : 0; // just inside the cup card, above the rim
 
   return (
     <div aria-hidden className="pointer-events-none fixed inset-0 z-[70] overflow-hidden">

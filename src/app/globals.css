@@ -53,3 +53,7 @@
 .marquee-track { animation: marquee 48s linear infinite; }
 .marquee:hover .marquee-track { animation-play-state: paused; }
 .marquee-fade { -webkit-mask-image: linear-gradient(to right, transparent, #000 7%, #000 93%, transparent); mask-image: linear-gradient(to right, transparent, #000 7%, #000 93%, transparent); }
+
+/* Espresso machine shake while a shot is brewing (CSS only, so it costs no React renders). */
+@keyframes brew-shake { 0%, 100% { transform: translate(0, 0); } 25% { transform: translate(-1.4px, .4px); } 75% { transform: translate(1.4px, -.4px); } }
+.brew-shake { animation: brew-shake .14s linear infinite; }

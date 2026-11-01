@@ -10,65 +10,15 @@ const mix = (a: string, b: string, t: number) => {
 
 const CUP = "M40 60 L160 60 L146 238 Q144 252 130 252 L70 252 Q56 252 54 238 Z";
 const BOTTOM = 250;
-const SPRING = { type: "spring", stiffness: 120, damping: 18 } as const;
-// Scale/rotate SVG parts around their own middle (or bottom) instead of the SVG corner.
-const CENTER = { transformBox: "fill-box", transformOrigin: "50% 50%" } as const;
-const BASE_ORIGIN = { transformBox: "fill-box", transformOrigin: "50% 100%" } as const;
-// One long wave; sliding it left by one period (40) loops seamlessly.
-const WAVE = "M-20 3 " + Array.from({ length: 8 }).map(() => "q10 -5 20 0 t20 0").join(" ") + " V10 H-20 Z";
 
-/** A topping group: fades away when removed. Its pieces animate themselves in. */
-function Group({ on, live, children }: { on: boolean; live: boolean; children: React.ReactNode }) {
-  return (
-    <AnimatePresence>
-      {on && <motion.g key="g" exit={live ? { opacity: 0, y: -16, transition: { duration: 0.2 } } : undefined}>{children}</motion.g>}
-    </AnimatePresence>
-  );
-}
+/** Liquid that is pouring in right now: it rises through its zone of the cup while the pour lasts. */
+export type Pour = { zone: "coffee" | "milk"; color: string; ms: number; key: number; target: Config };
 
-/** One piece (a cookie chunk, a marshmallow, a pinch of cocoa) that falls in, bounces and settles. */
-function Piece({ live, delay = 0, from = -70, children }: { live: boolean; delay?: number; from?: number; children: React.ReactNode }) {
-  return (
-    <motion.g
-      initial={live ? { y: from, opacity: 0, rotate: -25 } : false}
-      animate={{ y: 0, opacity: 1, rotate: 0 }}
-      transition={{ y: { type: "spring", stiffness: 240, damping: 11, delay }, rotate: { type: "spring", stiffness: 200, damping: 12, delay }, opacity: { duration: 0.12, delay } }}
-      style={CENTER}
-    >{children}</motion.g>
-  );
-}
+type Layer = { zone: "coffee" | "milk" | "both"; y: number; h: number; c: string };
 
-/** A tier of whipped cream that grows up from its base, like it is being squirted. */
-function Tier({ live, delay, children }: { live: boolean; delay: number; children: React.ReactNode }) {
-  return (
-    <motion.g initial={live ? { scale: 0 } : false} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 260, damping: 12, delay }} style={BASE_ORIGIN}>
-      {children}
-    </motion.g>
-  );
-}
-
-/** A sauce line that is "drawn" across the drink. */
-function Line({ live, d, color }: { live: boolean; d: string; color: string }) {
-  return (
-    <motion.path
-      d={d} stroke={color} strokeWidth="4" fill="none" strokeLinecap="round"
-      initial={live ? { pathLength: 0, opacity: 0 } : false}
-      animate={{ pathLength: 1, opacity: 1 }}
-      transition={{ pathLength: { duration: 0.9, delay: 0.25, ease: "easeInOut" }, opacity: { duration: 0.05, delay: 0.25 } }}
-    />
-  );
-}
-
-/**
- * Layered SVG cup rendered purely from a drink config.
- * `live` turns on the "game" animations (wavy surface, toppings that drop in, ice that splashes in).
- * `lid` slides a lid on, `stir` shows a spoon stirring. Leave them off for static thumbnails.
- */
-export default function Cup({ config, className = "h-64", live = false, lid = false, stir = false }: { config: Config; className?: string; live?: boolean; lid?: boolean; stir?: boolean }) {
-  const reduce = useReducedMotion();
-  const lively = live && !reduce;
+/** Where each liquid layer sits for a drink. Shared by the cup drawing and the pour animation. */
+function layout(config: Config) {
   const base = BASE_MAP[config.base];
-  if (!base) return null;
   const milk = MILK_MAP[config.milk];
   const total = 170 * SIZES[config.size].fill;
   const top = BOTTOM - total;
@@ -77,20 +27,47 @@ export default function Cup({ config, className = "h-64", live = false, lid = fa
   const blended = config.temp === "blended";
   const iced = config.temp !== "hot";
   const mixed = mix(coffee, milk.color, ratio);
-
   // iced: milk bottom + coffee on top; hot: coffee bottom + milk on top
   const milkH = total * ratio;
   const coffeeH = total - milkH;
-  const layers = blended
-    ? [{ y: top, h: total, c: mixed }]
+  const layers: Layer[] = blended
+    ? [{ zone: "both", y: top, h: total, c: mixed }]
     : iced
-      ? [{ y: top + coffeeH, h: milkH, c: milk.color }, { y: top, h: coffeeH, c: coffee }]
-      : [{ y: top + milkH, h: coffeeH, c: coffee }, { y: top, h: milkH, c: milk.color }];
-  const surface = layers[layers.length - 1].c;
+      ? [{ zone: "milk", y: top + coffeeH, h: milkH, c: milk.color }, { zone: "coffee", y: top, h: coffeeH, c: coffee }]
+      : [{ zone: "coffee", y: top + milkH, h: coffeeH, c: coffee }, { zone: "milk", y: top, h: milkH, c: milk.color }];
+  return { base, milk, total, top, iced, blended, layers };
+}
+
+/**
+ * Layered SVG cup rendered purely from a drink config.
+ * Optional "game" props (all off by default, so cart / home / hero cups look exactly as before):
+ *  - pour:   liquid rising in its zone while it is being poured
+ *  - ripple: change the number to make the liquid surface ripple once
+ *  - shine:  change the number to sweep a glossy highlight across the cup
+ *  - lively: toppings settle in and ice cubes drop in when they appear
+ */
+export default function Cup({ config, className = "h-64", pour, ripple = 0, shine = 0, lively = false }: { config: Config; className?: string; pour?: Pour | null; ripple?: number; shine?: number; lively?: boolean }) {
+  const reduce = useReducedMotion();
+  if (!BASE_MAP[config.base]) return null;
+  const fancy = !reduce; // no decorative motion for people who asked for less
+  const settle = lively; // same on server and client; reduced motion just makes the transitions instant
+  const { base, milk, top, iced, blended, layers } = layout(config);
 
   const has = (t: string) => config.toppings.includes(t);
-  const wy = -4; // whipped cream base, measured from the liquid surface (the toppings group moves with the liquid)
-  const showLid = lid && config.toppings.length === 0;
+  const whippedY = top - 4;
+  const drop = settle ? { y: -38, opacity: 0 } : false;
+  const land = { y: 0, opacity: 1 };
+  const instant = { duration: 0 };
+  const spring = reduce ? instant : { type: "spring" as const, stiffness: 200, damping: 15 };
+  const draw = settle ? { pathLength: 0, opacity: 0 } : false;
+  const drawn = { pathLength: 1, opacity: 1 };
+
+  let zone: { y: number; h: number } | null = null;
+  if (pour && fancy) {
+    const t = layout(pour.target).layers;
+    const z = t.find((l) => l.zone === pour.zone) ?? t[0];
+    zone = { y: z.y, h: z.h };
+  }
 
   return (
     <svg viewBox="0 0 200 270" className={className} role="img" aria-label={`${base.name} preview`}>
@@ -100,74 +77,71 @@ export default function Cup({ config, className = "h-64", live = false, lid = fa
       <path d={CUP} fill="currentColor" fillOpacity=".07" />
       <g clipPath="url(#cupclip)">
         {layers.map((l, i) => (
-          <motion.rect key={i} x="30" width="140" initial={false} animate={{ y: l.y, height: Math.max(l.h, 0), fill: l.c }} transition={SPRING} />
+          <motion.rect key={i} x="30" width="140" initial={false} animate={{ y: l.y, height: Math.max(l.h, 0), fill: l.c }} transition={{ type: "spring", stiffness: 120, damping: 18 }} />
         ))}
-        {lively && (
-          <motion.g initial={false} animate={{ y: top - 3 }} transition={SPRING}>
-            <motion.path d={WAVE} fill={surface} initial={{ x: 0 }} animate={{ x: -40 }} transition={{ duration: 1.8, repeat: Infinity, ease: "linear" }} />
-          </motion.g>
+        {!blended && !iced && milk.id !== "none" && (
+          <motion.ellipse key={`foam-${milk.id}`} cx="100" cy={top + 4} rx="58" fill="#fffaf2" initial={settle ? { ry: 0, opacity: 0 } : false} animate={{ ry: 7, opacity: 0.8 }} transition={reduce ? instant : { delay: settle ? 0.15 : 0, duration: 0.5, ease: "easeOut" }} />
         )}
-        {!blended && !iced && milk.id !== "none" && <ellipse cx="100" cy={top + 4} rx="58" ry="7" fill="#fffaf2" opacity=".8" />}
         {iced && [[72, 14], [108, 30], [84, 62], [118, 78], [74, 100]].map(([x, dy], i) => (
-          <motion.g key={i} initial={lively ? { y: -170, opacity: 0 } : false} animate={{ y: 0, opacity: 1 }} transition={{ y: { type: "spring", stiffness: 150, damping: 11, delay: i * 0.09 }, opacity: { duration: 0.1, delay: i * 0.09 } }}>
-            <motion.g animate={lively ? { y: [0, -3, 0] } : undefined} transition={{ duration: 2.4 + i * 0.3, repeat: Infinity, ease: "easeInOut", delay: i * 0.35 }}>
-              <rect x={x} y={top + dy} width="26" height="26" rx="5" fill="#fff" fillOpacity=".38" stroke="#fff" strokeOpacity=".6" transform={`rotate(${i * 17} ${x + 13} ${top + dy + 13})`} />
-            </motion.g>
+          <motion.g key={i} initial={settle ? { y: -90, opacity: 0 } : false} animate={land} transition={reduce ? instant : { ...spring, delay: settle ? i * 0.07 : 0 }}>
+            <rect x={x} y={top + dy} width="26" height="26" rx="5" fill="#fff" fillOpacity=".38" stroke="#fff" strokeOpacity=".6" transform={`rotate(${i * 17} ${x + 13} ${top + dy + 13})`} />
           </motion.g>
         ))}
         {blended && [[70, 40], [120, 70], [90, 100], [130, 30]].map(([x, dy], i) => <circle key={i} cx={x} cy={top + dy} r="4" fill="#fff" fillOpacity=".35" />)}
+
+        {/* liquid being poured right now (rises through its zone, then fades as the real layer takes over) */}
+        <AnimatePresence>
+          {pour && zone && (
+            <motion.rect key={pour.key} x="30" width="140" fill={pour.color} fillOpacity=".92"
+              initial={{ y: zone.y + zone.h, height: 0, opacity: 1 }} animate={{ y: zone.y, height: zone.h, opacity: 1 }} exit={{ opacity: 0, transition: { duration: 0.4 } }}
+              transition={{ duration: pour.ms / 1000, ease: "linear" }} />
+          )}
+        </AnimatePresence>
+
+        {/* surface ripple when something lands in the liquid */}
+        {fancy && ripple > 0 && (
+          <motion.ellipse key={`r${ripple}`} cx="100" cy={top + 3} ry="5" fill="none" stroke="#fff" strokeWidth="2.5"
+            initial={{ rx: 14, opacity: 0.9 }} animate={{ rx: 60, opacity: 0 }} transition={{ duration: 0.65, ease: "easeOut" }} />
+        )}
+
+        {/* glossy highlight sweeping across (step completed / drink finished) */}
+        {fancy && shine > 0 && (
+          <g transform="skewX(-16)">
+            <motion.rect key={`s${shine}`} x="-70" y="40" width="30" height="230" fill="#fff"
+              initial={{ x: 0, opacity: 0 }} animate={{ x: 300, opacity: [0, 0.55, 0] }} transition={{ duration: 0.8, ease: "easeInOut" }} />
+          </g>
+        )}
       </g>
       <path d={CUP} fill="none" stroke="currentColor" strokeOpacity=".45" strokeWidth="3" strokeLinejoin="round" />
       <path d="M36 56 H164" stroke="currentColor" strokeOpacity=".6" strokeWidth="6" strokeLinecap="round" />
 
-      {/* Toppings ride on the liquid surface, so they rise and fall smoothly with it. */}
-      <motion.g initial={false} animate={{ y: top }} transition={SPRING}>
-        <Group on={has("cocoa")} live={lively}>
-          {Array.from({ length: 14 }).map((_, i) => <Piece key={i} live={lively} delay={i * 0.03} from={-90}><circle cx={62 + ((i * 37) % 76)} cy={3 + (i % 3) * 2} r="2" fill="#5a3a28" /></Piece>)}
-        </Group>
-        <Group on={has("cookie")} live={lively}>
-          {[[70, 0], [90, -3], [112, 0], [128, -2], [100, -6]].map(([x, dy], i) => <Piece key={i} live={lively} delay={i * 0.07}><rect x={x} y={dy - 6} width="11" height="8" rx="2" fill="#b07a45" transform={`rotate(${i * 25} ${x} 0)`} /></Piece>)}
-        </Group>
-        <Group on={has("marshmallow")} live={lively}>
-          {[[72, 0], [100, -4], [124, 0]].map(([x, dy], i) => <Piece key={i} live={lively} delay={i * 0.1}><rect x={x - 8} y={dy - 14} width="16" height="14" rx="4" fill="#fff" stroke="#eadfd0" /></Piece>)}
-        </Group>
-        <Group on={has("whipped")} live={lively}>
+      {has("cocoa") && (
+        <motion.g initial={drop} animate={land} transition={spring}>
+          {Array.from({ length: 14 }).map((_, i) => <circle key={i} cx={62 + ((i * 37) % 76)} cy={top + 3 + (i % 3) * 2} r="2" fill="#5a3a28" />)}
+        </motion.g>
+      )}
+      {has("cookie") && (
+        <motion.g initial={drop} animate={land} transition={spring}>
+          {[[70, 0], [90, -3], [112, 0], [128, -2], [100, -6]].map(([x, dy], i) => <rect key={i} x={x} y={top + dy - 6} width="11" height="8" rx="2" fill="#b07a45" transform={`rotate(${i * 25} ${x} ${top})`} />)}
+        </motion.g>
+      )}
+      {has("marshmallow") && (
+        <motion.g initial={drop} animate={land} transition={spring}>
+          {[[72, 0], [100, -4], [124, 0]].map(([x, dy], i) => <rect key={i} x={x - 8} y={top + dy - 14} width="16" height="14" rx="4" fill="#fff" stroke="#eadfd0" />)}
+        </motion.g>
+      )}
+      {has("whipped") && (
+        <motion.g initial={drop} animate={land} transition={spring}>
           <g fill="#fffdf8" stroke="#eadfd0" strokeWidth="1.5">
-            <Tier live={lively} delay={0}><circle cx="76" cy={wy - 6} r="22" /><circle cx="124" cy={wy - 6} r="22" /><ellipse cx="100" cy={wy} rx="50" ry="12" /></Tier>
-            <Tier live={lively} delay={0.14}><circle cx="100" cy={wy - 22} r="24" /></Tier>
-            <Tier live={lively} delay={0.28}><circle cx="100" cy={wy - 44} r="10" /></Tier>
+            <circle cx="76" cy={whippedY - 6} r="22" /><circle cx="124" cy={whippedY - 6} r="22" /><circle cx="100" cy={whippedY - 22} r="24" /><ellipse cx="100" cy={whippedY} rx="50" ry="12" />
           </g>
-        </Group>
-        <Group on={has("caramel_drizzle")} live={lively}><Line live={lively} d={`M62 ${wy - 14} q14 -12 26 0 t26 0 t26 0`} color="#c68642" /></Group>
-        <Group on={has("choco_drizzle")} live={lively}><Line live={lively} d={`M66 ${wy - 26} q12 12 24 0 t24 0 t22 0`} color="#3b2417" /></Group>
-      </motion.g>
-
+        </motion.g>
+      )}
+      {has("caramel_drizzle") && <motion.path d={`M62 ${whippedY - 14} q14 -12 26 0 t26 0 t26 0`} stroke="#c68642" strokeWidth="4" fill="none" strokeLinecap="round" initial={draw} animate={drawn} transition={reduce ? instant : { duration: 0.55, ease: "easeOut" }} />}
+      {has("choco_drizzle") && <motion.path d={`M66 ${whippedY - 26} q12 12 24 0 t24 0 t22 0`} stroke="#3b2417" strokeWidth="4" fill="none" strokeLinecap="round" initial={draw} animate={drawn} transition={reduce ? instant : { duration: 0.55, ease: "easeOut" }} />}
       {!iced && [78, 100, 122].map((x, i) => (
         <motion.path key={x} d={`M${x} 40 q-8 -10 0 -20 q8 -10 0 -20`} stroke="currentColor" strokeOpacity=".3" strokeWidth="3" fill="none" strokeLinecap="round" initial={{ opacity: 0 }} animate={{ opacity: [0, 0.6, 0], y: [0, -8, -14] }} transition={{ duration: 2.4, repeat: Infinity, delay: i * 0.5 }} />
       ))}
-
-      {/* Stirring spoon (shown while the drink is being mixed). */}
-      <AnimatePresence>
-        {stir && (
-          <motion.g key="spoon" initial={{ opacity: 0, y: -30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -30 }}>
-            <motion.g animate={{ x: [-22, 22, -22], rotate: [-6, 6, -6] }} transition={{ duration: 0.5, repeat: Infinity, ease: "easeInOut" }} style={{ transformBox: "fill-box", transformOrigin: "50% 0%" }}>
-              <line x1="100" y1="8" x2="100" y2="190" stroke="#d9d9d9" strokeWidth="6" strokeLinecap="round" />
-              <ellipse cx="100" cy="196" rx="9" ry="6" fill="#d9d9d9" stroke="#8c8c8c" strokeWidth="1.5" />
-            </motion.g>
-          </motion.g>
-        )}
-      </AnimatePresence>
-
-      {/* Lid (open-top drinks with toppings stay open, like a sundae). */}
-      <AnimatePresence>
-        {showLid && (
-          <motion.g key="lid" initial={{ y: -80, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ y: { type: "spring", stiffness: 280, damping: 13 }, opacity: { duration: 0.1 } }}>
-            <path d="M32 54 Q100 38 168 54 L166 66 Q100 74 34 66 Z" fill="#f3ece2" stroke="currentColor" strokeOpacity=".5" strokeWidth="3" strokeLinejoin="round" />
-            <ellipse cx="136" cy="55" rx="8" ry="3" fill="currentColor" fillOpacity=".35" />
-            {iced && <line x1="122" y1="14" x2="118.7" y2="60" stroke="#e8554e" strokeWidth="6" strokeLinecap="round" />}
-          </motion.g>
-        )}
-      </AnimatePresence>
     </svg>
   );
 }
