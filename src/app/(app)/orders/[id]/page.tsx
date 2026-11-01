@@ -1,7 +1,7 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Cup from "@/components/Cup";
-import { RefreshEvery, ReorderButton } from "@/components/Misc";
+import { HideOrderButton, RefreshEvery, ReorderButton } from "@/components/Misc";
 import OrderProgress from "@/components/OrderProgress";
 import Receipt, { ReceiptData } from "@/components/Receipt";
 import { StatChips } from "@/components/Stats";
@@ -19,7 +19,7 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
   const { placed } = await searchParams;
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
   const s = (await getSession())!;
-  const [o] = await db.select().from(orders).where(and(eq(orders.id, id), eq(orders.userId, s.user.id)));
+  const [o] = await db.select().from(orders).where(and(eq(orders.id, id), eq(orders.userId, s.user.id), isNull(orders.hiddenAt)));
   if (!o) notFound();
 
   const receipt: ReceiptData = {
@@ -68,6 +68,7 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
         <div className="card space-y-1 text-sm"><div className="flex justify-between"><span>Subtotal</span><span>{fmt(o.subtotalCents)}</span></div><div className="flex justify-between"><span>Delivery</span><span>{fmt(o.deliveryFeeCents)}</span></div><div className="flex justify-between text-lg font-bold"><span>Total</span><span>{fmt(o.totalCents)}</span></div></div>
       </div>
       {receiptCard}
+      {(o.status === "completed" || o.status === "cancelled") && <div className="flex justify-end"><HideOrderButton id={o.id} number={o.number} goTo="/orders" /></div>}
     </div>
   );
 }

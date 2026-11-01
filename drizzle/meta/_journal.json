@@ -22,6 +22,13 @@
       "when": 1793543636674,
       "tag": "0002_user_prefs",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1793630036674,
+      "tag": "0003_order_hidden_at",
+      "breakpoints": true
     }
   ]
 }

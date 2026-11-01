@@ -98,6 +98,8 @@ export const orders = pgTable("orders", {
   totalCents: integer("total_cents").notNull(),
   paymentMethod: text("payment_method").notNull().default("cash"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
+  /** Set when the customer removes the order from "My orders". The row is kept (admin records, EXP and badges). */
+  hiddenAt: timestamp("hidden_at"),
 });
 
 /** Taste preferences from onboarding. `data` is encrypted at rest; it is null when the person skipped. */

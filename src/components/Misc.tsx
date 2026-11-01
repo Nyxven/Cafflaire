@@ -64,3 +64,31 @@ export function DeleteOrderButton({ id, number }: { id: string; number: string }
     </div>
   );
 }
+
+/** Customer: remove a finished (completed/cancelled) order from My orders. Asks first. The server only hides it. */
+export function HideOrderButton({ id, number, goTo }: { id: string; number: string; goTo?: string }) {
+  const router = useRouter();
+  const [ask, setAsk] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+
+  async function remove() {
+    setBusy(true);
+    setErr("");
+    const res = await fetch(`/api/orders/${id}`, { method: "DELETE" });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) { setBusy(false); setErr(data.error ?? "Could not remove this order."); return; }
+    if (goTo) router.push(goTo);
+    router.refresh();
+  }
+
+  if (!ask) return <button type="button" className="btn-ghost !min-h-9 !px-3 text-sm text-berry" onClick={() => setAsk(true)} aria-label={`Remove order ${number} from my orders`}>🗑 Remove</button>;
+  return (
+    <div className="flex flex-wrap items-center justify-end gap-2" role="alertdialog" aria-label={`Confirm removing order ${number}`}>
+      <span className="text-sm font-semibold">Remove {number} from your orders?</span>
+      <button type="button" className="btn !min-h-9 !px-3 bg-berry text-sm text-white" disabled={busy} onClick={remove}>{busy ? "Removing…" : "Yes, remove"}</button>
+      <button type="button" className="btn-ghost !min-h-9 !px-3 text-sm" disabled={busy} onClick={() => { setAsk(false); setErr(""); }}>Keep it</button>
+      {err && <span role="alert" className="w-full text-right text-sm text-berry">{err}</span>}
+    </div>
+  );
+}

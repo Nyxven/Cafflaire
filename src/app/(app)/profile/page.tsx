@@ -1,15 +1,17 @@
 import Link from "next/link";
 import { SignOutButton } from "@/components/Misc";
 import Ring from "@/components/Ring";
+import { BadgeGrid, LevelCard, LevelChip } from "@/components/Rewards";
 import { describePrefs } from "@/lib/prefs";
 import { getPrefsState } from "@/lib/prefs-server";
+import { getRewards } from "@/lib/rewards-server";
 import { getSession } from "@/lib/session";
 
 export const metadata = { title: "Profile" };
 
 export default async function Profile() {
   const s = (await getSession())!;
-  const state = await getPrefsState(s.user.id);
+  const [state, rewards] = await Promise.all([getPrefsState(s.user.id), getRewards(s.user.id)]);
   return (
     <div className="space-y-6">
       <section className="card relative overflow-hidden">
@@ -19,10 +21,16 @@ export default async function Profile() {
           <div className="min-w-0">
             <h2 className="truncate text-2xl font-bold">{s.user.name}</h2>
             <p className="truncate opacity-70">{s.user.email}</p>
-            <span className={`chip mt-2 ${s.user.emailVerified ? "bg-matcha/25" : "bg-berry/20"}`}>{s.user.emailVerified ? "Email verified ✓" : "Email not verified"}</span>
+            <div className="flex flex-wrap gap-x-2">
+              <LevelChip r={rewards} />
+              <span className={`chip mt-2 ${s.user.emailVerified ? "bg-matcha/25" : "bg-berry/20"}`}>{s.user.emailVerified ? "Email verified ✓" : "Email not verified"}</span>
+            </div>
           </div>
         </div>
       </section>
+
+      <LevelCard r={rewards} />
+      <BadgeGrid r={rewards} />
 
       <section className="card">
         <div className="flex items-start justify-between gap-3">
@@ -31,7 +39,7 @@ export default async function Profile() {
         </div>
         {state.status === "completed"
           ? <div className="mt-4 flex flex-wrap gap-1.5">{describePrefs(state.prefs).map((t) => <span key={t} className="chip">{t}</span>)}</div>
-          : <p className="mt-4 text-sm opacity-70">Nothing saved yet. Five quick questions and your home page gets personal.</p>}
+          : <p className="mt-4 text-sm opacity-70">Nothing saved yet. Five quick questions and your home page gets personal (and earn 50 EXP).</p>}
       </section>
 
       <SignOutButton />
